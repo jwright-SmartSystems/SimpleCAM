@@ -39,10 +39,10 @@ section{break-inside:auto}
     <p class="sub">User manual · lightweight 2D drawing to G-code</p>
   </div>
 </div>
-<p class="meta">For the Genmitsu 3030-PROVer Ultra (GRBL) · Version 1.4 (safe lift before Go to X0 Y0) · 2 November 2026</p>
+<p class="meta">For the Genmitsu 3030-PROVer Ultra (GRBL) · Version 1.5 (DXF export, empty start) · 2 November 2026</p>
 
 <ol class="toc">
-  <li>Overview</li><li>Getting started</li><li>Drawing a part</li><li>Importing DXF files</li>
+  <li>Overview</li><li>Getting started</li><li>Drawing a part</li><li>Importing and exporting DXF</li>
   <li>The sheet and nesting</li><li>Settings</li><li>G-code output</li><li>Simulator</li>
   <li>Machine tab: sending to the CNC</li><li>Running a job on the machine</li><li>Limitations</li><li>Technical reference</li>
 </ol>
@@ -67,7 +67,7 @@ section{break-inside:auto}
   <tr><td>Centre</td><td>The three tabs, the toolbar for the current tab, and the drawing canvas</td></tr>
   <tr><td>Right panel</td><td>Sheet size, cutting settings, <b>Advanced</b>, warnings, and the G-code download</td></tr>
 </table>
-<p>The page opens with a sample U-shaped part (120 × 40 mm, two 8 mm holes, quantity 4) already nested on a 310 × 300 mm sheet. Delete it or edit it to start your own.</p>
+<p>The first time it opens, SimpleCAM starts with one empty part, "Part 1", ready to draw. After that it remembers your parts and settings between visits.</p>
 <p>On every canvas the mouse wheel zooms, a middle-button drag pans, and <b>Fit</b> (or the F key) brings everything back into view. The bar at the bottom of the canvas shows hints and the cursor position in mm.</p>
 
 <h2>3. Drawing a part</h2>
@@ -80,7 +80,7 @@ section{break-inside:auto}
   <tr><td>Edit</td><td>E</td><td>Click an edge, point or hole to select it and type exact values. Drag points and holes to move them. Double-click an edge to add a point. Delete removes the selected point or hole.</td></tr>
   <tr><td>Pan</td><td>P</td><td>Drag to move the view.</td></tr>
 </table>
-<p><b>Clear</b> empties the current part. <b>Undo</b> (or Ctrl+Z) steps back through changes.</p>
+<p><b>Clear</b> empties the current part. <b>Undo</b> (or Ctrl+Z) steps back through changes. <b>Export DXF</b> saves the current part as a DXF drawing (see section 4).</p>
 
 <h3>Typing exact sizes (Edit mode)</h3>
 <p>Selecting something in Edit mode opens a box at the top right of the canvas. Type a value and press Enter.</p>
@@ -121,7 +121,7 @@ section{break-inside:auto}
 </table>
 <p>Holes are listed below as <code>x, y, diameter</code>. The <b>Next point</b> box adds a single point while drawing, using the same forms.</p>
 
-<h2>4. Importing DXF files</h2>
+<h2>4. Importing and exporting DXF</h2>
 <p>Click <b>Import DXF</b> under Parts, or drop one or more <code>.dxf</code> files anywhere on the page. Each import adds new parts with quantity 1, moves them so their bottom-left corner sits at 0,0, and places them on the sheet. If the only part in the list is empty, the first import fills it.</p>
 <table>
   <tr><th style="width:28%">DXF entity</th><th>How it is used</th></tr>
@@ -137,7 +137,13 @@ section{break-inside:auto}
   <li>Arcs become short straight segments within 0.01 mm of the true curve.</li>
   <li>Units follow the file's <code>$INSUNITS</code> setting: inches, feet, cm and metres are converted to mm. If it is missing, mm is assumed.</li>
 </ul>
-<p><b>Left out</b> (listed in a message under the Parts list after import): cut-outs inside a part that are not round; open lines that do not form a closed shape; blocks (explode them in CAD first); text, dimensions, hatching and leaders; binary DXF files (save as ASCII DXF instead).</p>
+<h3>Exporting DXF</h3>
+<ul>
+  <li><b>A part:</b> on the Draw part tab, <b>Export DXF</b> saves the current part as <i>part name</i>.dxf. The outline is one closed polyline on layer OUTLINE, with corner radii as true arcs; holes are circles on layer HOLES. It opens in any CAD program and imports back into SimpleCAM unchanged.</li>
+  <li><b>A sheet:</b> on the Sheet tab, <b>Export DXF</b> saves the nested layout as it will be cut: the sheet outline (layer SHEET), every placed part in its position, rotation and mirror (layer PARTS), and their holes (layer HOLES). Use it to check or record a layout in CAD; arcs come out as short straight segments.</li>
+  <li>Files are AutoCAD R12 DXF in millimetres, the most widely readable version.</li>
+</ul>
+<p><b>Left out of an import</b> (listed in a message under the Parts list after import): cut-outs inside a part that are not round; open lines that do not form a closed shape; blocks (explode them in CAD first); text, dimensions, hatching and leaders; binary DXF files (save as ASCII DXF instead).</p>
 
 <h2>5. The sheet and nesting</h2>
 <p>The Sheet tab shows the sheet (310 × 300 mm by default) with its corner marked X0 Y0, the edge margin as a dashed line, and every placed part with its toolpath in orange and tabs as small squares.</p>
@@ -151,6 +157,7 @@ section{break-inside:auto}
   <tr><td>Mirror</td><td><b>Mirror</b> (label shows "(M)")</td><td>M</td></tr>
   <tr><td>Add a copy</td><td><b>Duplicate</b> (quantity goes up by 1)</td><td></td></tr>
   <tr><td>Remove a copy</td><td><b>Remove</b> (quantity goes down by 1)</td><td>Delete</td></tr>
+  <tr><td>Save layout as DXF</td><td><b>Export DXF</b></td><td></td></tr>
 </table>
 <p>Rotate and mirror keep the part centred where it was.</p>
 <p><b>Checks.</b> A part turns red, with a warning, if its cut runs off the sheet or it is closer than one cutter width to another part (the cutter would cut into it). Move it or press Nest again. Changing a part's shape does not move parts already on the sheet; if they now overlap they turn red, and Nest re-spaces them.</p>

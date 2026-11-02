@@ -128,11 +128,13 @@ button.danger:disabled{color:inherit}
     <span class="sep"></span>
     <button id="closeShape">Close shape</button>
     <button id="clearShape">Clear</button>
+    <button id="exportPartDxf" title="Save this part as a DXF drawing">Export DXF</button>
     <button class="undo">Undo</button>
     <button class="fit">Fit</button>
   </div>
   <div class="toolbar hidden" id="sheetBar">
     <button class="primary" id="nest">Nest</button>
+    <button id="exportSheetDxf" title="Save this sheet's layout as a DXF drawing">Export DXF</button>
     <span class="sep"></span>
     <button id="rot90" title="R">Rotate 90°</button>
     <label style="margin:0">Angle <input type="number" id="angle" step="1"></label>
@@ -250,9 +252,8 @@ const SET_VERSION = 2;
 const DEF_SET = {sheetW:310, sheetH:300, thick:2, material:'alu', tool:6, gap:20, tabsOn:true,
   ...MATERIALS.alu, over:0.2, safe:5, margin:25, dir:'climb', rotate:true, tabs:1, tabW:3, tabH:0.6, dec:3,
   snap:'1', dims:true, guides:true, holeD:5, name:'job'};
-const SAMPLE = {nextId:2, placed:[], parts:[{id:1, name:'Part 1', qty:4, closed:true,
-  pts:[{x:0,y:0},{x:120,y:0},{x:120,y:40},{x:100,y:40},{x:100,y:20},{x:20,y:20},{x:20,y:40},{x:0,y:40}],
-  holes:[{x:10,y:10,d:8},{x:110,y:10,d:8}]}]};
+// A first visit starts with one empty part, ready to draw.
+const SAMPLE = {nextId:2, placed:[], parts:[{id:1, name:'Part 1', qty:1, closed:false, pts:[], holes:[]}]};
 
 let doc = JSON.parse(JSON.stringify(SAMPLE));
 let set = {...DEF_SET};
@@ -346,31 +347,31 @@ const placeable = p => p && p.closed && p.pts.length >= 3;
 
 // The outline as cut: points stay sharp in the drawing, and a point with a radius (pt.r) is replaced by an arc
 // tangent to both edges. The arc is shrunk if it would use more than half of either edge.
+// The arc that replaces corner i: tangent points p1 (on the edge in) and p2 (on the edge out), centre c,
+// radius r and the signed sweep from p1 to p2. Null for a sharp corner.
+function filletAt(part, i){
+  const p = part.pts, n = p.length, v = p[i];
+  if (!(v.r > 0) || n < 3) return null;
+  const prev = p[(i-1+n)%n], next = p[(i+1)%n];
+  const u1 = norm(sub(prev, v)), u2 = norm(sub(next, v)), th = Math.acos(Math.max(-1, Math.min(1, dot(u1, u2))));
+  if (th < 1e-3 || th > Math.PI - 1e-3) return null;
+  const t = Math.min(v.r/Math.tan(th/2), len(sub(prev, v))/2, len(sub(next, v))/2), r = t*Math.tan(th/2);
+  const p1 = add(v, mul(u1, t)), p2 = add(v, mul(u2, t)), c = add(v, mul(norm(add(u1, u2)), r/Math.sin(th/2)));
+  const a = sub(p1, c), b = sub(p2, c);
+  return {p1, p2, c, r, a0:Math.atan2(a.y, a.x), sweep:Math.atan2(cross(a, b), dot(a, b))};
+}
 function shapePts(part){
   const p = part.pts, n = p.length;
   if (!part.closed || n < 3 || !p.some(q => q.r > 0)) return p;
   const out = [];
   for (let i=0;i<n;i++){
-    const v = p[i], prev = p[(i-1+n)%n], next = p[(i+1)%n];
-    if (!(v.r > 0)){ out.push(v); continue; }
-    const L1 = len(sub(prev, v)), L2 = len(sub(next, v)), u1 = norm(sub(prev, v)), u2 = norm(sub(next, v));
-    const th = Math.acos(Math.max(-1, Math.min(1, dot(u1, u2))));
-    if (th < 1e-3 || th > Math.PI - 1e-3){ out.push(v); continue; }
-    const t = Math.min(v.r/Math.tan(th/2), L1/2, L2/2), r = t*Math.tan(th/2);
-    const p1 = add(v, mul(u1, t)), p2 = add(v, mul(u2, t)), c = add(v, mul(norm(add(u1, u2)), r/Math.sin(th/2)));
-    const a = sub(p1, c), b = sub(p2, c);
-    out.push(...arcPts(c, r, Math.atan2(a.y, a.x), Math.atan2(cross(a, b), dot(a, b))));
+    const f = filletAt(part, i);
+    if (f) out.push(...arcPts(f.c, f.r, f.a0, f.sweep)); else out.push(p[i]);
   }
   return clean(out);
 }
-function cornerRadius(part, i){
-  // The radius actually cut at point i (smaller than asked if the edges are too short).
-  const p = part.pts, n = p.length, v = p[i];
-  if (!(v.r > 0) || n < 3) return 0;
-  const u1 = norm(sub(p[(i-1+n)%n], v)), u2 = norm(sub(p[(i+1)%n], v)), th = Math.acos(Math.max(-1, Math.min(1, dot(u1, u2))));
-  if (th < 1e-3 || th > Math.PI - 1e-3) return 0;
-  return Math.min(v.r, Math.min(len(sub(p[(i-1+n)%n], v)), len(sub(p[(i+1)%n], v)))/2*Math.tan(th/2));
-}
+// The radius actually cut at point i (smaller than asked if the edges are too short).
+function cornerRadius(part, i){ const f = filletAt(part, i); return f ? f.r : 0; }
 
 // Placed copy of a part: mirror (in X), rotate, then move so its bounding box starts at (inst.x, inst.y).
 function xf(part, inst){
@@ -696,7 +697,8 @@ function regen(){
   const notFit = doc.parts.filter(p => placeable(p) && doc.placed.filter(q => q.partId === p.id).length < p.qty);
   if (notFit.length) res.warn.unshift(notFit.map(p => p.name).join(', ') + ': some copies do not fit on a sheet. Check the sheet size, margin and gap.');
   const open = doc.parts.filter(p => p.qty > 0 && !placeable(p));
-  if (open.length) res.warn.unshift(open.map(p => p.name).join(', ') + ' has no closed shape yet, so it is not on the sheet.');
+  const started = open.filter(p => p.pts.length);   // an untouched empty part is not worth a warning
+  if (started.length) res.warn.unshift(started.map(p => p.name).join(', ') + ' has no closed shape yet, so it is not on the sheet.');
   $('gcode').value = res.gcode;
   $('warn').innerHTML = '';
   for (const w of res.warn){ const d = document.createElement('div'); d.textContent = w; $('warn').appendChild(d); }
@@ -709,6 +711,55 @@ function regen(){
   for (const id of ['rot90','mirror','dupe','remove','angle']) $(id).disabled = !selInst;
   if (selInst && document.activeElement !== $('angle')) $('angle').value = selInst.rot || 0;
 }
+
+/* ---------- DXF export ---------- */
+// AutoCAD R12 ASCII, millimetres: outlines as closed POLYLINEs (corner radii as true arcs via bulges),
+// holes as CIRCLEs. R12 opens in practically every CAD and CAM program, and SimpleCAM imports it back.
+const dxfNum = v => String(+(+v).toFixed(6));
+function dxfPoly(verts, closed, layer){
+  const o = ['0','POLYLINE','8',layer,'66','1','10','0','20','0','30','0','70', closed ? '1' : '0'];
+  for (const v of verts){ o.push('0','VERTEX','8',layer,'10',dxfNum(v.x),'20',dxfNum(v.y),'30','0'); if (v.b) o.push('42', dxfNum(v.b)); }
+  o.push('0','SEQEND','8',layer);
+  return o;
+}
+function dxfCircle(h, layer){ return ['0','CIRCLE','8',layer,'10',dxfNum(h.x),'20',dxfNum(h.y),'30','0','40',dxfNum(h.d/2)]; }
+function dxfFile(entities){
+  return ['0','SECTION','2','HEADER','9','$ACADVER','1','AC1009','9','$INSUNITS','70','4','0','ENDSEC',
+    '0','SECTION','2','ENTITIES', ...entities, '0','ENDSEC','0','EOF'].join('\r\n') + '\r\n';
+}
+// A part's outline with each radiused corner as two tangent points; the bulge on the first is tan(sweep/4).
+function partDxfVerts(part){
+  const out = [];
+  part.pts.forEach((q, i) => {
+    const f = part.closed ? filletAt(part, i) : null;
+    if (f){ out.push({...f.p1, b:Math.tan(f.sweep/4)}, {...f.p2}); } else out.push({x:q.x, y:q.y});
+  });
+  return out;
+}
+function saveFile(name, text, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const safeName = s => (s || 'part').replace(/[^\w.-]+/g, '_');
+function exportPartDxf(){
+  const part = P();
+  if (part.pts.length < 2) return flash('Draw the part first.');
+  const e = [...dxfPoly(partDxfVerts(part), part.closed, 'OUTLINE'), ...part.holes.flatMap(h => dxfCircle(h, 'HOLES'))];
+  saveFile(safeName(part.name) + '.dxf', dxfFile(e), 'application/dxf');
+  flash('Saved ' + safeName(part.name) + '.dxf' + (part.closed ? '' : ' (the outline is not closed yet)'));
+}
+function exportSheetDxf(){
+  const g = genSheet(sheetIdx);
+  if (!g.geo.length) return flash('Nothing on this sheet to export.');
+  const W = set.sheetW, H = set.sheetH;
+  const e = [...dxfPoly([{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}], true, 'SHEET')];
+  for (const p of g.geo){ e.push(...dxfPoly(clean(p.outline), true, 'PARTS'), ...p.holes.flatMap(h => dxfCircle(h, 'HOLES'))); }
+  const name = safeName(set.name || 'job') + (sheetCount() > 1 ? '-sheet' + (sheetIdx + 1) : '') + '.dxf';
+  saveFile(name, dxfFile(e), 'application/dxf');
+  flash('Saved ' + name);
+}
+
 function download(si){
   const r = genSheet(si);
   if (!r.gcode) return flash('Nothing to cut on sheet ' + (si + 1) + '.');
@@ -1972,6 +2023,8 @@ for (const k in DEF_SET){
   });
 }
 $('closeShape').addEventListener('click', closeShape);
+$('exportPartDxf').addEventListener('click', exportPartDxf);
+$('exportSheetDxf').addEventListener('click', exportSheetDxf);
 $('clearShape').addEventListener('click', () => { const p = P(); if (!p.pts.length && !p.holes.length) return; snapshot(); p.pts = []; p.holes = []; p.closed = false; selected = null; changed(); setMode('draw'); });
 $('newPart').addEventListener('click', () => { snapshot(); const p = newPartObj(); doc.parts.push(p); curId = p.id; renderParts(); changed(); setTab('part'); });
 $('applyText').addEventListener('click', () => {
