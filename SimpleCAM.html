@@ -75,6 +75,13 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background
 .pill.st-hold{background:#fef0c7;color:#93370d}.pill.st-alarm{background:#fee4e2;color:#b42318}
 button.danger{border-color:#d92d20;color:#b42318}
 button.danger:disabled{color:inherit}
+.tabs .helpBtn{margin-left:auto;color:var(--accent)}
+.helpOverlay{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:#fff}
+.helpBar{display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+.helpBar a{color:var(--accent);font-size:13px;text-decoration:none}
+.helpBar a:hover{text-decoration:underline}
+.helpBar .note{margin:0}
+.helpOverlay iframe{flex:1;border:0;width:100%}
 .installCard{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px rgba(16,24,40,.18);max-width:calc(100vw - 32px)}
 .installCard p{margin:0;font-size:13px}
 .installCard p span{display:block;color:var(--muted);font-size:12px}
@@ -118,6 +125,7 @@ button.danger:disabled{color:inherit}
     <button data-tab="sheet">2 · Sheet</button>
     <button data-tab="sim">3 · Simulate</button>
     <button data-tab="machine">4 · Machine</button>
+    <button id="helpBtn" class="helpBtn" title="Open the manual at the section for this tab (F1)">? Help</button>
   </div>
   <div class="toolbar" id="partBar">
     <button data-mode="draw">Draw</button>
@@ -229,6 +237,18 @@ button.danger:disabled{color:inherit}
   <p class="note">Zero X/Y on the front-left corner of the sheet and Z on its top surface.</p>
   <details><summary>Show G-code</summary><textarea id="gcode" readonly spellcheck="false"></textarea></details>
 </aside>
+
+<div class="helpOverlay hidden" id="helpOverlay" role="dialog" aria-label="SimpleCAM manual">
+  <div class="helpBar">
+    <b>SimpleCAM manual</b>
+    <span class="note" id="helpOffline"></span>
+    <span style="flex:1"></span>
+    <a id="helpNewWin" target="_blank" rel="noopener">Open in its own window</a>
+    <a href="SimpleCAM-Manual.pdf" target="_blank" rel="noopener">PDF</a>
+    <button class="primary" id="helpClose">Close</button>
+  </div>
+  <iframe id="helpFrame" title="SimpleCAM manual"></iframe>
+</div>
 
 <div class="installCard hidden" id="installCard" role="dialog" aria-label="Install SimpleCAM">
   <img src="icons/icon-192.png" width="40" height="40" alt="">
@@ -1776,6 +1796,8 @@ cv.addEventListener('wheel', e => {
 }, {passive:false});
 
 window.addEventListener('keydown', e => {
+  if (e.key === 'F1'){ e.preventDefault(); openHelp(); return; }
+  if (!$('helpOverlay').classList.contains('hidden')){ if (e.key === 'Escape') closeHelp(); return; }
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing){ e.preventDefault(); undo(); return; }
   if (typing) return;
@@ -2023,6 +2045,22 @@ for (const k in DEF_SET){
   });
 }
 $('closeShape').addEventListener('click', closeShape);
+
+/* ---------- help: the manual (docs/manual.html) as a wiki over the app ---------- */
+const MANUAL = 'docs/manual.html', MANUAL_ONLINE = 'https://jwright-smartsystems.github.io/SimpleCAM/docs/manual.html';
+const HELP_FOR_TAB = {part:'drawing', sheet:'sheet', sim:'simulator', machine:'machine'};
+function openHelp(section){
+  const url = MANUAL + '#' + (section || HELP_FOR_TAB[tab] || 'overview');
+  $('helpFrame').src = url;
+  $('helpNewWin').href = url;
+  // A file opened on its own (e.g. from an email) may not have the docs folder beside it.
+  $('helpOffline').innerHTML = location.protocol === 'file:' ? 'Manual not showing? <a href="' + MANUAL_ONLINE + '" target="_blank" rel="noopener">Read it online</a>' : '';
+  $('helpOverlay').classList.remove('hidden');
+}
+function closeHelp(){ $('helpOverlay').classList.add('hidden'); }
+$('helpBtn').addEventListener('click', () => openHelp());
+window.addEventListener('message', e => { if (e.data === 'simplecam:close-help') closeHelp(); });
+$('helpClose').addEventListener('click', closeHelp);
 $('exportPartDxf').addEventListener('click', exportPartDxf);
 $('exportSheetDxf').addEventListener('click', exportSheetDxf);
 $('clearShape').addEventListener('click', () => { const p = P(); if (!p.pts.length && !p.holes.length) return; snapshot(); p.pts = []; p.holes = []; p.closed = false; selected = null; changed(); setMode('draw'); });

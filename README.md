@@ -10,23 +10,26 @@ Double-click `SimpleCAM.html`. It is one self-contained file with no install and
 
 To connect to the machine, the CH340 USB driver must be installed so the controller shows up as a COM port. Click **Connect** on the Machine tab and pick the device; there is no COM number to set. **Simulated machine** gives a pretend controller for practice and training.
 
-The full user manual is `SimpleCAM-Manual.pdf`.
+The user manual opens inside SimpleCAM with **? Help** (or F1) as a searchable wiki, at the section for the current tab. It is also `SimpleCAM-Manual.pdf`.
+
+Live link: https://jwright-smartsystems.github.io/SimpleCAM/ (installs as an app from Edge or Chrome). Pushing to `main` republishes it.
 
 ## Files
 
 | File | What it is |
 | --- | --- |
-| `SimpleCAM.html` | The program: drawing, DXF import, nesting, G-code, simulator, machine sender, simulated machine |
-| `SimpleCAM-Manual.pdf` | User manual |
-| `docs/manual-source.html` | Source for the manual |
+| `SimpleCAM.html` | The program: drawing, DXF import and export, nesting, G-code, simulator, machine sender, simulated machine |
+| `docs/manual.html` | The manual: a wiki on screen (contents, search), and the source of the PDF |
+| `SimpleCAM-Manual.pdf` | The manual printed to PDF |
+| `index.html`, `manifest.webmanifest`, `sw.js`, `icons/` | Install-as-app and offline support |
 | `logo.svg` | Logo (also built into the program) |
 
-## Rebuilding the manual
+## Rebuilding the PDF manual
 
-Edit `docs/manual-source.html`, then print it to PDF with Edge:
+Edit `docs/manual.html`, then print it to PDF with Edge (the wiki sidebar and search are screen-only, so the PDF is a plain document):
 
 ```powershell
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf="$PWD\SimpleCAM-Manual.pdf" "file:///$($PWD -replace '\\','/')/docs/manual-source.html"
+& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf="$PWD\SimpleCAM-Manual.pdf" "file:///$($PWD -replace '\\','/')/docs/manual.html"
 ```
 
 ## Defaults

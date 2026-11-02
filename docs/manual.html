@@ -28,6 +28,42 @@ th{background:#eef3fd;font-weight:600}
 .check li::before{content:"\2610  ";color:#1f6feb}
 section{break-inside:auto}
 .pb{break-before:page}
+.toc a{color:inherit;text-decoration:none}
+
+/* On screen the manual reads like a wiki: contents sidebar, search, current section highlighted.
+   None of this applies when printing, so the PDF stays a plain document. */
+@media print{ #wikiNav{display:none} }
+@media screen{
+  html{scroll-behavior:smooth}
+  body{display:grid;grid-template-columns:270px minmax(0,1fr);background:#f4f5f7;font-size:15px;line-height:1.55;min-height:100vh}
+  #doc{background:#fff;max-width:900px;padding:32px 44px 120px;border-right:1px solid #d8dbe0}
+  #doc table{font-size:13.5px}
+  #doc code{font-size:13px}
+  h2,h3{scroll-margin-top:14px}
+  h2{font-size:22px;margin-top:40px}
+  h3{font-size:17px;margin-top:24px}
+  .toc{display:none}
+  #wikiNav{position:sticky;top:0;height:100vh;overflow:auto;background:#fff;border-right:1px solid #d8dbe0;padding:16px 14px 40px;font-size:13.5px}
+  #wikiNav .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:10px}
+  #wikiNav input{width:100%;padding:7px 9px;border:1px solid #d8dbe0;border-radius:6px;font:inherit;margin-bottom:4px}
+  #wikiNav .count{color:#667085;font-size:12px;min-height:18px;margin-bottom:6px}
+  #wikiNav ul{list-style:none;margin:0;padding:0}
+  #wikiNav li{margin:0}
+  #wikiNav a{display:block;padding:4px 8px;border-radius:5px;color:#1d2433;text-decoration:none}
+  #wikiNav a:hover{background:#f0f4fb}
+  #wikiNav a.on{background:#eaf1fe;color:#1f6feb;font-weight:600}
+  #wikiNav ul ul a{padding-left:22px;font-size:12.5px;color:#475467}
+  #wikiNav li.dim > a{opacity:.35}
+  #wikiNav .links{border-top:1px solid #d8dbe0;margin-top:12px;padding-top:10px}
+  #wikiNav .links a{color:#1f6feb}
+  mark{background:#ffe58f;border-radius:2px;padding:0 1px}
+  .search-hidden{display:none!important}
+  @media (max-width:820px){
+    body{display:block}
+    #wikiNav{position:static;height:auto;border-right:0;border-bottom:1px solid #d8dbe0}
+    #doc{padding:20px 18px 80px}
+  }
+}
 </style>
 </head>
 <body>
@@ -42,12 +78,12 @@ section{break-inside:auto}
 <p class="meta">For the Genmitsu 3030-PROVer Ultra (GRBL) · Version 1.5 (DXF export, empty start) · 2 November 2026</p>
 
 <ol class="toc">
-  <li>Overview</li><li>Getting started</li><li>Drawing a part</li><li>Importing and exporting DXF</li>
-  <li>The sheet and nesting</li><li>Settings</li><li>G-code output</li><li>Simulator</li>
-  <li>Machine tab: sending to the CNC</li><li>Running a job on the machine</li><li>Limitations</li><li>Technical reference</li>
+  <li><a href="#overview">Overview</a></li><li><a href="#getting-started">Getting started</a></li><li><a href="#drawing">Drawing a part</a></li><li><a href="#dxf">Importing and exporting DXF</a></li>
+  <li><a href="#sheet">The sheet and nesting</a></li><li><a href="#settings">Settings</a></li><li><a href="#gcode">G-code output</a></li><li><a href="#simulator">Simulator</a></li>
+  <li><a href="#machine">Machine tab: sending to the CNC</a></li><li><a href="#running">Running a job on the machine</a></li><li><a href="#limitations">Limitations</a></li><li><a href="#reference">Technical reference</a></li>
 </ol>
 
-<h2>1. Overview</h2>
+<h2 id="overview">1. Overview</h2>
 <p>SimpleCAM turns a 2D drawing into a G-code file for the Genmitsu 3030-PROVer Ultra CNC router. It works for any flat part cut from sheet: endcaps, brackets, plates, spacers, templates or signs. It is a single web page that runs in any modern browser, with nothing to install and no internet connection needed.</p>
 <p>The workflow runs across four tabs:</p>
 <ol>
@@ -57,10 +93,10 @@ section{break-inside:auto}
   <li><b>Machine:</b> connect to the CNC over USB, jog, zero and run the sheet directly. Or download the <code>.nc</code> file and run it from Candle or UGS.</li>
 </ol>
 <p>Each part is an outer outline, with any corner rounded if you want, plus round holes, cut from sheet 2 mm thick by default. The cutter always runs outside the outline, so the finished part is the drawn size.</p>
-<p class="note">This is a first version for testing. It has been checked in a browser but not yet proven on the machine. Feeds and speeds are starting values only: do an air run and a scrap test first.</p>
+<p class="note">SimpleCAM is in use in production. Feeds and speeds are starting values: for a new material or setting, do an air run and a scrap test first.</p>
 
-<h2>2. Getting started</h2>
-<p>Double-click <code>SimpleCAM.html</code> to open it in your browser. It is one self-contained file: copy it anywhere, or send it by email. In the project it sits at <code>tools/simplecam/SimpleCAM.html</code>.</p>
+<h2 id="getting-started">2. Getting started</h2>
+<p>Open <b>https://jwright-smartsystems.github.io/SimpleCAM/</b> in Edge or Chrome. It offers to install SimpleCAM as an app, with its own window, a taskbar or desktop icon, and offline use; installed copies update themselves when a new version is published. You can also double-click <code>SimpleCAM.html</code> from the <a href="https://github.com/jwright-SmartSystems/SimpleCAM">SimpleCAM repository</a>. <b>? Help</b> (or F1) opens this manual inside SimpleCAM at the section for the tab you are on.</p>
 <table>
   <tr><th style="width:22%">Area</th><th>What is there</th></tr>
   <tr><td>Left panel</td><td>Parts list (name, quantity, size), <b>+ New part</b>, <b>Import DXF</b>, typed coordinates, drawing options</td></tr>
@@ -70,7 +106,7 @@ section{break-inside:auto}
 <p>The first time it opens, SimpleCAM starts with one empty part, "Part 1", ready to draw. After that it remembers your parts and settings between visits.</p>
 <p>On every canvas the mouse wheel zooms, a middle-button drag pans, and <b>Fit</b> (or the F key) brings everything back into view. The bar at the bottom of the canvas shows hints and the cursor position in mm.</p>
 
-<h2>3. Drawing a part</h2>
+<h2 id="drawing">3. Drawing a part</h2>
 <p>Each part is one closed outline plus any number of round holes. All sizes are in mm; Y goes up the screen.</p>
 <h3>Toolbar modes</h3>
 <table>
@@ -121,7 +157,7 @@ section{break-inside:auto}
 </table>
 <p>Holes are listed below as <code>x, y, diameter</code>. The <b>Next point</b> box adds a single point while drawing, using the same forms.</p>
 
-<h2>4. Importing and exporting DXF</h2>
+<h2 id="dxf">4. Importing and exporting DXF</h2>
 <p>Click <b>Import DXF</b> under Parts, or drop one or more <code>.dxf</code> files anywhere on the page. Each import adds new parts with quantity 1, moves them so their bottom-left corner sits at 0,0, and places them on the sheet. If the only part in the list is empty, the first import fills it.</p>
 <table>
   <tr><th style="width:28%">DXF entity</th><th>How it is used</th></tr>
@@ -145,7 +181,7 @@ section{break-inside:auto}
 </ul>
 <p><b>Left out of an import</b> (listed in a message under the Parts list after import): cut-outs inside a part that are not round; open lines that do not form a closed shape; blocks (explode them in CAD first); text, dimensions, hatching and leaders; binary DXF files (save as ASCII DXF instead).</p>
 
-<h2>5. The sheet and nesting</h2>
+<h2 id="sheet">5. The sheet and nesting</h2>
 <p>The Sheet tab shows the sheet (310 × 300 mm by default) with its corner marked X0 Y0, the edge margin as a dashed line, and every placed part with its toolpath in orange and tabs as small squares.</p>
 <p><b>Quantities.</b> The number box beside each part sets how many are cut. Raising it places the new copies in free space without moving parts already placed; lowering it removes the most recently placed copies. A part with no closed outline is not placed.</p>
 <p><b>Nest.</b> Clears the sheet and lays out every copy again, largest parts first. Each part goes in the lowest free spot, filling rows from the front-left corner, and may be turned 90° if that fits better. Parts are kept the <b>Gap between parts</b> apart and the <b>Sheet edge margin</b> in from the edge. When a sheet is full, Nest starts another; step through sheets with ‹ and ›.</p>
@@ -162,7 +198,7 @@ section{break-inside:auto}
 <p>Rotate and mirror keep the part centred where it was.</p>
 <p><b>Checks.</b> A part turns red, with a warning, if its cut runs off the sheet or it is closer than one cutter width to another part (the cutter would cut into it). Move it or press Nest again. Changing a part's shape does not move parts already on the sheet; if they now overlap they turn red, and Nest re-spaces them.</p>
 
-<h2>6. Settings</h2>
+<h2 id="settings">6. Settings</h2>
 <p>Settings sit in the right panel and apply to every part and sheet. The everyday ones are always visible; the rest are under <b>Advanced</b>, where <b>Reset settings</b> restores the defaults.</p>
 <table>
   <tr><th style="width:28%">Always visible</th><th style="width:20%">Default</th><th>Notes</th></tr>
@@ -194,7 +230,7 @@ section{break-inside:auto}
 </table>
 <p>Parts and settings are remembered by the browser on that computer between visits. When the defaults change in a new version, saved settings are replaced by the new defaults once; saved parts are kept.</p>
 
-<h2>7. G-code output</h2>
+<h2 id="gcode">7. G-code output</h2>
 <p><b>Download G-code</b> saves the current sheet as an <code>.nc</code> file named from the <b>File name</b> box (default <code>job.nc</code>). With more than one sheet, files are named <code>job-sheet1.nc</code>, <code>job-sheet2.nc</code> and so on, and <b>All sheets</b> downloads them all. <b>Show G-code</b> displays the text; the stats line gives the part count, passes, line count and a rough time.</p>
 <p><b>Zero point:</b> X0 Y0 is the front-left corner of the sheet; Z0 is the top surface of the sheet.</p>
 <ol>
@@ -209,7 +245,7 @@ section{break-inside:auto}
 <p><b>Tabs.</b> On passes deeper than the tab height, the cutter lifts to the tab top over each tab. With the defaults, the single pass lifts to Z-1.6 over the tab, leaving a 3 mm wide, 0.6 mm thick bridge. The tab length along the path includes the cutter diameter, so the bridge left on the part is the width you set.</p>
 <p><b>Outline offset.</b> The cutter runs one radius outside the drawn outline, so the part comes out at the drawn size. Outside corners are rounded by the cutter path; inside corners are left with a radius equal to the cutter radius.</p>
 
-<h2>8. Simulator</h2>
+<h2 id="simulator">8. Simulator</h2>
 <p>The Simulate tab plays back the G-code text itself, line by line, so it shows exactly what the machine will be sent. It plays the sheet selected in the Sheet tab.</p>
 <p><b>Controls:</b> Play/Pause (or Space), Restart, Speed (1×, 5×, 20×, 60× or 200×; 20× by default) and a slider to jump to any point. Drag to pan; the wheel zooms. <b>Readout:</b> G-code line number, cutter X, Y and Z, and time so far against the total.</p>
 <table>
@@ -223,7 +259,7 @@ section{break-inside:auto}
 </table>
 <p>The time is an estimate: cutting moves use the feed rates in the file, and moves in the air assume 1500 mm/min, because the machine's real rapid speed has not been measured.</p>
 
-<h2>9. Machine tab: sending to the CNC</h2>
+<h2 id="machine">9. Machine tab: sending to the CNC</h2>
 <p>The Machine tab drives the CNC directly from SimpleCAM, so Candle is not needed. It works in <b>Chrome or Edge</b> only; Firefox cannot talk to USB serial ports.</p>
 <p><b>Connecting.</b> The machine must first show up in Windows as a COM port (Device Manager → Ports, usually <i>USB-SERIAL CH340</i>; if not, install the CH340 driver). Click <b>Connect</b>: the browser asks you to choose the serial device, once. There is no COM number or baud rate to set; SimpleCAM uses 115200, GRBL's standard. Only one program can use the port at a time, so close Candle first.</p>
 <p><b>Simulated machine.</b> Click <b>Simulated machine</b> instead of Connect to practise with a pretend controller that runs inside SimpleCAM: no CNC, cable or driver needed. It answers like GRBL 1.1 on the 3030: moves take real time at their feed rates, and jog, zero, pause, stop, alarms and error messages all work. Homing reports "not enabled", as on a machine without limit switches. <b>Sim speed</b> (1×, 5×, 20×) runs it faster than real life. The status shows <i>Simulated</i> so it can't be mistaken for the real machine. Use it for training, and to check a job streams cleanly before cutting. It does not test the USB cable, driver or port.</p>
@@ -243,7 +279,7 @@ section{break-inside:auto}
 <p><b>During a job</b> the sheet view shades the toolpath up to the last line GRBL accepted, and the circle shows where the machine actually is. Jog and zero are locked until the job ends. If GRBL rejects a line or raises an alarm, the job stops and the console says why. If the cable is pulled, SimpleCAM reports it; the machine finishes what it already has in its buffer, so be ready at the stop button. The browser warns before closing the page during a job.</p>
 <p class="note">The physical stop button on the machine always comes first. The Stop button in SimpleCAM depends on the USB connection.</p>
 
-<h2>10. Running a job on the 3030-PROVer Ultra</h2>
+<h2 id="running">10. Running a job on the 3030-PROVer Ultra</h2>
 <p>Run it from the Machine tab, or download the <code>.nc</code> file and use any GRBL sender, such as Candle or Universal Gcode Sender.</p>
 <ul class="check">
   <li>Check the sheet size and thickness in SimpleCAM match the real sheet.</li>
@@ -260,10 +296,9 @@ section{break-inside:auto}
   <li>Cut the parts free at the tabs and file the tab marks flush.</li>
 </ul>
 
-<h2>11. Limitations and things to check</h2>
+<h2 id="limitations">11. Limitations and things to check</h2>
 <ul>
-  <li><b>Not yet proven on the machine.</b> Run the first jobs in the air, then on scrap.</li>
-  <li><b>The Machine tab is tested against the simulated machine only</b>, not yet the real 3030. Try it first with the cutter well above the sheet.</li>
+  <li><b>New materials and settings:</b> run the first job in the air, then on scrap.</li>
   <li><b>The simulated machine is a simplification:</b> it starts and stops instantly (no acceleration), has no limit switches or soft limits, and runs rapids at 1500 mm/min.</li>
   <li><b>Machine tab needs Chrome or Edge.</b> It does not work in Firefox.</li>
   <li><b>Feeds and speeds are starting values</b>, not tested figures. Adjust them after a test cut and note what works.</li>
@@ -278,7 +313,7 @@ section{break-inside:auto}
   <li><b>Rough time estimates.</b> Rapid moves are assumed at 1500 mm/min.</li>
 </ul>
 
-<h2>12. Technical reference</h2>
+<h2 id="reference">12. Technical reference</h2>
 <table>
   <tr><th style="width:20%">Tab</th><th style="width:26%">Key</th><th>Action</th></tr>
   <tr><td>All</td><td>Ctrl+Z</td><td>Undo</td></tr>
@@ -312,7 +347,99 @@ section{break-inside:auto}
   <tr><td>Browser</td><td>Any current Chrome or Edge (Firefox works for everything except the Machine tab)</td></tr>
   <tr><td>Saved data</td><td>Browser local storage, key <code>simplecam-v1</code>: parts (corner radius stored per point as <code>r</code>), placements and settings</td></tr>
   <tr><td>Output</td><td><code>.nc</code> text files, GRBL G-code, millimetres</td></tr>
+  <tr><td>Manual</td><td><code>docs/manual.html</code>: read on screen as a wiki (Help button in SimpleCAM) and printed to <code>SimpleCAM-Manual.pdf</code></td></tr>
 </table>
 
+<script>
+// Wiki view: wrap the document, build a contents sidebar from the headings, add search and a "you are here" highlight.
+(function(){
+  const doc = document.createElement('main'); doc.id = 'doc';
+  while (document.body.firstChild) doc.appendChild(document.body.firstChild);
+  document.body.appendChild(doc);
+  const slug = s => s.toLowerCase().replace(/^\d+\.\s*/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const heads = [...doc.querySelectorAll('h2, h3')];
+  heads.forEach(h => { if (!h.id) h.id = slug(h.textContent); });
+
+  // One <section> per chapter, so search can show or hide whole chapters.
+  const sections = [];
+  doc.querySelectorAll('h2').forEach(h => {
+    const sec = document.createElement('section'); sec.dataset.for = h.id;
+    h.before(sec); let n = h;
+    while (n && !(n !== h && n.tagName === 'H2') && n.tagName !== 'SCRIPT'){ const next = n.nextSibling; sec.appendChild(n); n = next; }
+    sections.push(sec);
+  });
+
+  const nav = document.createElement('nav'); nav.id = 'wikiNav';
+  const logo = doc.querySelector('.cover svg');
+  nav.innerHTML = '<div class="brand">' + (logo ? logo.outerHTML.replace(/width="\d+" height="\d+"/, 'width="26" height="26"') : '') + 'SimpleCAM manual</div>' +
+    '<input type="search" id="wikiSearch" placeholder="Search the manual" aria-label="Search the manual"><div class="count" id="wikiCount"></div>';
+  const ul = document.createElement('ul'); let sub = null;
+  heads.forEach(h => {
+    const li = document.createElement('li'), a = document.createElement('a');
+    a.href = '#' + h.id; a.textContent = h.textContent.replace(/^\d+\.\s*/, ''); a.dataset.target = h.id;
+    li.appendChild(a);
+    if (h.tagName === 'H2'){ li.dataset.sec = h.id; ul.appendChild(li); sub = document.createElement('ul'); li.appendChild(sub); }
+    else if (sub) sub.appendChild(li);
+  });
+  nav.appendChild(ul);
+  const inApp = window.self !== window.top;
+  nav.insertAdjacentHTML('beforeend', '<div class="links">' + (inApp ? '' : '<a href="../SimpleCAM.html">Open SimpleCAM</a>') +
+    '<a href="../SimpleCAM-Manual.pdf" target="_blank">Download as PDF</a></div>');
+  document.body.insertBefore(nav, doc);
+
+  // "You are here": the last heading above the top of the window.
+  const links = [...nav.querySelectorAll('a[data-target]')];
+  function spy(){
+    let cur = heads[0];
+    for (const h of heads) if (h.offsetParent && h.getBoundingClientRect().top < 90) cur = h;
+    links.forEach(a => a.classList.toggle('on', a.dataset.target === cur.id));
+  }
+  addEventListener('scroll', spy, {passive:true}); spy();
+
+  // Search: show only chapters that mention the words, and highlight them.
+  const input = document.getElementById('wikiSearch'), count = document.getElementById('wikiCount');
+  function clearMarks(){ doc.querySelectorAll('mark').forEach(m => { m.replaceWith(document.createTextNode(m.textContent)); }); doc.normalize(); }
+  function search(){
+    const q = input.value.trim().toLowerCase();
+    clearMarks();
+    let shown = 0, hits = 0;
+    sections.forEach(sec => {
+      const match = !q || sec.textContent.toLowerCase().includes(q);
+      sec.classList.toggle('search-hidden', !match);
+      const li = nav.querySelector('li[data-sec="' + sec.dataset.for + '"]'); if (li) li.classList.toggle('dim', !match);
+      if (match) shown++;
+      if (!match || !q) return;
+      const walker = document.createTreeWalker(sec, NodeFilter.SHOW_TEXT), nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const t of nodes){
+        const s = t.nodeValue, low = s.toLowerCase(); let i = low.indexOf(q);
+        if (i < 0) continue;
+        const frag = document.createDocumentFragment(); let last = 0;
+        while (i >= 0){ frag.append(s.slice(last, i)); const m = document.createElement('mark'); m.textContent = s.slice(i, i + q.length); frag.append(m); hits++; last = i + q.length; i = low.indexOf(q, last); }
+        frag.append(s.slice(last)); t.replaceWith(frag);
+      }
+    });
+    doc.querySelector('.cover').classList.toggle('search-hidden', !!q);
+    doc.querySelector('.meta').classList.toggle('search-hidden', !!q);
+    count.textContent = q ? (hits ? hits + ' match' + (hits === 1 ? '' : 'es') + ' in ' + shown + ' section' + (shown === 1 ? '' : 's') : 'No matches') : '';
+    if (q){ const first = doc.querySelector('mark'); if (first) first.scrollIntoView({block:'center'}); } else scrollTo(0, 0);
+    spy();
+  }
+  let timer; input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 150); });
+  input.addEventListener('keydown', e => { if (e.key === 'Escape'){ input.value = ''; search(); } });
+
+  // Generated ids (sub-headings) don't exist on first load, so jump to the address's section by hand.
+  if (location.hash){
+    const t = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (t) setTimeout(() => { t.scrollIntoView({behavior:'instant'}); spy(); }, 0);
+  }
+  addEventListener('hashchange', () => setTimeout(spy, 50));
+
+  // Inside SimpleCAM, Esc (outside the search box) closes the manual.
+  if (inApp) addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.activeElement !== input) parent.postMessage('simplecam:close-help', '*');
+  });
+})();
+</script>
 </body>
 </html>

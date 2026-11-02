@@ -1,7 +1,7 @@
 // SimpleCAM offline support. Network first, so a new version is picked up whenever the PC is online;
 // the cached copy is used when it is offline.
 const CACHE = 'simplecam';
-const FILES = ['./', './SimpleCAM.html', './manifest.webmanifest', './logo.svg', './SimpleCAM-Manual.pdf',
+const FILES = ['./', './SimpleCAM.html', './manifest.webmanifest', './logo.svg', './SimpleCAM-Manual.pdf', './docs/manual.html',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
