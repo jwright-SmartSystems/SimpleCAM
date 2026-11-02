@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimpleCAM</title>
+<meta name="theme-color" content="#1f6feb">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f6feb'/%3E%3Crect x='12' y='18' width='40' height='28' rx='4' fill='none' stroke='%23ffb27a' stroke-width='2.5'/%3E%3Crect x='16' y='22' width='32' height='20' rx='1.5' fill='%23fff'/%3E%3Ccircle cx='24' cy='32' r='3' fill='%231f6feb'/%3E%3Ccircle cx='40' cy='32' r='3' fill='%231f6feb'/%3E%3Ccircle cx='52' cy='28' r='4.5' fill='%23e5531a' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#f4f5f7;--panel:#fff;--line:#d8dbe0;--text:#1d2433;--muted:#667085;--accent:#1f6feb;--warn:#b54708;--warnbg:#fff4e5}
@@ -74,6 +75,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background
 .pill.st-hold{background:#fef0c7;color:#93370d}.pill.st-alarm{background:#fee4e2;color:#b42318}
 button.danger{border-color:#d92d20;color:#b42318}
 button.danger:disabled{color:inherit}
+.installCard{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px rgba(16,24,40,.18);max-width:calc(100vw - 32px)}
+.installCard p{margin:0;font-size:13px}
+.installCard p span{display:block;color:var(--muted);font-size:12px}
 .hidden{display:none!important}
 </style>
 </head>
@@ -81,6 +85,7 @@ button.danger:disabled{color:inherit}
 <aside class="left">
   <h1 class="brand"><svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1f6feb"/><rect x="12" y="18" width="40" height="28" rx="4" fill="none" stroke="#ffb27a" stroke-width="2.5"/><rect x="16" y="22" width="32" height="20" rx="1.5" fill="#fff"/><circle cx="24" cy="32" r="3" fill="#1f6feb"/><circle cx="40" cy="32" r="3" fill="#1f6feb"/><circle cx="52" cy="28" r="4.5" fill="#e5531a" stroke="#fff" stroke-width="1.5"/></svg>SimpleCAM</h1>
   <p class="note">Genmitsu 3030-PROVer Ultra · GRBL · mm</p>
+  <div class="row hidden" id="installRow"><button id="installLink">Install SimpleCAM on this computer</button></div>
 
   <h2>Parts</h2>
   <div class="parts" id="partsList"></div>
@@ -222,6 +227,13 @@ button.danger:disabled{color:inherit}
   <p class="note">Zero X/Y on the front-left corner of the sheet and Z on its top surface.</p>
   <details><summary>Show G-code</summary><textarea id="gcode" readonly spellcheck="false"></textarea></details>
 </aside>
+
+<div class="installCard hidden" id="installCard" role="dialog" aria-label="Install SimpleCAM">
+  <img src="icons/icon-192.png" width="40" height="40" alt="">
+  <p><b>Install SimpleCAM on this computer?</b><span>It opens in its own window, works offline, and can be pinned to the taskbar or desktop.</span></p>
+  <button class="primary" id="installYes">Install</button>
+  <button id="installNo">Not now</button>
+</div>
 
 <script>
 'use strict';
@@ -1996,6 +2008,35 @@ sync();
 renderParts();
 new ResizeObserver(resize).observe(document.querySelector('.canvasWrap'));
 requestAnimationFrame(() => { resize(); setTab(doc.placed.length ? 'sheet' : 'part'); });
+
+/* ---------- install as an app (only when served from a web address; a double-clicked file can't install) ---------- */
+let installPrompt = null;
+if (/^https?:$/.test(location.protocol)){
+  const man = document.createElement('link'); man.rel = 'manifest'; man.href = 'manifest.webmanifest'; document.head.appendChild(man);
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(err => console.warn('Offline support not available:', err));
+}
+const installed = () => matchMedia('(display-mode: standalone)').matches;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); installPrompt = e;
+  if (installed()) return;
+  $('installRow').classList.remove('hidden');
+  let dismissed = false; try { dismissed = localStorage.getItem('simplecam-install-dismissed') === '1'; } catch(err) { /* storage unavailable */ }
+  if (!dismissed) $('installCard').classList.remove('hidden');
+});
+async function doInstall(){
+  if (!installPrompt) return;
+  $('installCard').classList.add('hidden');
+  installPrompt.prompt();
+  const r = await installPrompt.userChoice; installPrompt = null;
+  if (r.outcome === 'accepted') $('installRow').classList.add('hidden');
+}
+window.addEventListener('appinstalled', () => { $('installCard').classList.add('hidden'); $('installRow').classList.add('hidden'); });
+$('installYes').addEventListener('click', doInstall);
+$('installLink').addEventListener('click', doInstall);
+$('installNo').addEventListener('click', () => {
+  $('installCard').classList.add('hidden');
+  try { localStorage.setItem('simplecam-install-dismissed', '1'); } catch(err) { /* storage unavailable */ }
+});
 </script>
 </body>
 </html>

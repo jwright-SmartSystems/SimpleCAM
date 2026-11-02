@@ -1,0 +1,16 @@
+{
+  "name": "SimpleCAM",
+  "short_name": "SimpleCAM",
+  "description": "2D drawing to G-code for the Genmitsu 3030-PROVer Ultra: draw, nest, simulate and send to the CNC.",
+  "id": "./SimpleCAM.html",
+  "start_url": "./SimpleCAM.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f6feb",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
