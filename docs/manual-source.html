@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SimpleCAM - User Manual</title>
+<style>
+@page{size:A4;margin:18mm 16mm 18mm 16mm}
+*{box-sizing:border-box}
+body{font:10pt/1.45 "Segoe UI",system-ui,sans-serif;color:#1d2433;margin:0}
+h1{font-size:24pt;margin:0;letter-spacing:-.01em}
+h2{font-size:14pt;margin:22px 0 6px;padding-bottom:4px;border-bottom:2px solid #1f6feb;break-after:avoid}
+h3{font-size:11pt;margin:14px 0 4px;break-after:avoid}
+p{margin:0 0 7px}
+ul,ol{margin:0 0 8px;padding-left:20px}
+li{margin:2px 0}
+code{font:9pt Consolas,monospace;background:#f1f3f6;padding:0 3px;border-radius:3px}
+table{border-collapse:collapse;width:100%;margin:4px 0 10px;font-size:9pt;break-inside:auto}
+tr{break-inside:avoid}
+th,td{border:1px solid #d8dbe0;padding:4px 6px;text-align:left;vertical-align:top}
+th{background:#eef3fd;font-weight:600}
+.cover{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.sub{color:#667085;font-size:11pt;margin:2px 0 0}
+.meta{color:#667085;font-size:9pt;margin:10px 0 16px;border-top:1px solid #d8dbe0;padding-top:6px}
+.toc{columns:2;font-size:9.5pt;margin:0 0 6px}
+.toc li{break-inside:avoid}
+.note{background:#fff4e5;color:#7a3e06;padding:7px 10px;border-radius:5px;margin:8px 0}
+.check li{list-style:none;margin-left:-18px}
+.check li::before{content:"\2610  ";color:#1f6feb}
+section{break-inside:auto}
+.pb{break-before:page}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <svg viewBox="0 0 64 64" width="64" height="64"><rect width="64" height="64" rx="14" fill="#1f6feb"/><rect x="12" y="18" width="40" height="28" rx="4" fill="none" stroke="#ffb27a" stroke-width="2.5"/><rect x="16" y="22" width="32" height="20" rx="1.5" fill="#fff"/><circle cx="24" cy="32" r="3" fill="#1f6feb"/><circle cx="40" cy="32" r="3" fill="#1f6feb"/><circle cx="52" cy="28" r="4.5" fill="#e5531a" stroke="#fff" stroke-width="1.5"/></svg>
+  <div>
+    <h1>SimpleCAM</h1>
+    <p class="sub">User manual · lightweight 2D drawing to G-code</p>
+  </div>
+</div>
+<p class="meta">For the Genmitsu 3030-PROVer Ultra (GRBL) · Version 1.4 (safe lift before Go to X0 Y0) · 2 November 2026</p>
+
+<ol class="toc">
+  <li>Overview</li><li>Getting started</li><li>Drawing a part</li><li>Importing DXF files</li>
+  <li>The sheet and nesting</li><li>Settings</li><li>G-code output</li><li>Simulator</li>
+  <li>Machine tab: sending to the CNC</li><li>Running a job on the machine</li><li>Limitations</li><li>Technical reference</li>
+</ol>
+
+<h2>1. Overview</h2>
+<p>SimpleCAM turns a 2D drawing into a G-code file for the Genmitsu 3030-PROVer Ultra CNC router. It works for any flat part cut from sheet: endcaps, brackets, plates, spacers, templates or signs. It is a single web page that runs in any modern browser, with nothing to install and no internet connection needed.</p>
+<p>The workflow runs across four tabs:</p>
+<ol>
+  <li><b>Draw part:</b> draw each part, type in coordinates, or import a DXF.</li>
+  <li><b>Sheet:</b> set how many of each part you need, nest them on the sheet, and adjust by hand.</li>
+  <li><b>Simulate:</b> play back the G-code to check it.</li>
+  <li><b>Machine:</b> connect to the CNC over USB, jog, zero and run the sheet directly. Or download the <code>.nc</code> file and run it from Candle or UGS.</li>
+</ol>
+<p>Each part is an outer outline, with any corner rounded if you want, plus round holes, cut from sheet 2 mm thick by default. The cutter always runs outside the outline, so the finished part is the drawn size.</p>
+<p class="note">This is a first version for testing. It has been checked in a browser but not yet proven on the machine. Feeds and speeds are starting values only: do an air run and a scrap test first.</p>
+
+<h2>2. Getting started</h2>
+<p>Double-click <code>SimpleCAM.html</code> to open it in your browser. It is one self-contained file: copy it anywhere, or send it by email. In the project it sits at <code>tools/simplecam/SimpleCAM.html</code>.</p>
+<table>
+  <tr><th style="width:22%">Area</th><th>What is there</th></tr>
+  <tr><td>Left panel</td><td>Parts list (name, quantity, size), <b>+ New part</b>, <b>Import DXF</b>, typed coordinates, drawing options</td></tr>
+  <tr><td>Centre</td><td>The three tabs, the toolbar for the current tab, and the drawing canvas</td></tr>
+  <tr><td>Right panel</td><td>Sheet size, cutting settings, <b>Advanced</b>, warnings, and the G-code download</td></tr>
+</table>
+<p>The page opens with a sample U-shaped part (120 × 40 mm, two 8 mm holes, quantity 4) already nested on a 310 × 300 mm sheet. Delete it or edit it to start your own.</p>
+<p>On every canvas the mouse wheel zooms, a middle-button drag pans, and <b>Fit</b> (or the F key) brings everything back into view. The bar at the bottom of the canvas shows hints and the cursor position in mm.</p>
+
+<h2>3. Drawing a part</h2>
+<p>Each part is one closed outline plus any number of round holes. All sizes are in mm; Y goes up the screen.</p>
+<h3>Toolbar modes</h3>
+<table>
+  <tr><th style="width:12%">Mode</th><th style="width:7%">Key</th><th>What it does</th></tr>
+  <tr><td>Draw</td><td>D</td><td>Click to add outline points. Click the first point, press Enter or click <b>Close shape</b> to finish. Hold Shift for a straight horizontal or vertical line. Right-click or Backspace removes the last point.</td></tr>
+  <tr><td>Hole</td><td>H</td><td>Click to place a hole. The diameter comes from the Ø box next to the button.</td></tr>
+  <tr><td>Edit</td><td>E</td><td>Click an edge, point or hole to select it and type exact values. Drag points and holes to move them. Double-click an edge to add a point. Delete removes the selected point or hole.</td></tr>
+  <tr><td>Pan</td><td>P</td><td>Drag to move the view.</td></tr>
+</table>
+<p><b>Clear</b> empties the current part. <b>Undo</b> (or Ctrl+Z) steps back through changes.</p>
+
+<h3>Typing exact sizes (Edit mode)</h3>
+<p>Selecting something in Edit mode opens a box at the top right of the canvas. Type a value and press Enter.</p>
+<ul>
+  <li><b>Edge:</b> Length and Angle. Angle 0° points right and 90° points up. Clicking the edge's length label also selects it.</li>
+  <li><b>Stretch the part</b> (on by default): when you change an edge's length, every point and hole beyond the middle of that edge moves with it, so the other edges keep their lengths. With it off, only the edge's end point moves.</li>
+  <li><b>Changing an edge's angle</b> pivots it about its start point. Its end point slides along the next edge's line, so the next edge keeps its direction and only changes length.</li>
+  <li><b>Point:</b> X, Y, Corner angle (the angle inside the shape; inside corners read over 180°) and Corner radius.</li>
+  <li><b>Hole:</b> X, Y and Diameter.</li>
+</ul>
+<p>Example: on the sample part, changing the bottom edge from 120 to 150 keeps both 20 mm flanges and moves the right-hand hole across by 30 mm.</p>
+
+<h3>Corner radii</h3>
+<p>Any corner can be rounded. In Edit mode, click the corner point and type a <b>Corner radius</b> in mm; 0 makes it sharp again. <b>Use this radius on all corners</b> copies it to every corner of the part. It works on outside corners (rounded off) and inside corners (filled in with a curve).</p>
+<ul>
+  <li>The arc is tangent to both edges. Edge lengths, angles and the drawn points stay at the sharp corner, as on a drawing; the sharp corner shows as a faint dashed line.</li>
+  <li>If the edges are too short for the radius asked, a smaller radius is cut so the arc uses no more than half of each edge. The box says what is cut.</li>
+  <li>In typed coordinates, add <code>r</code> and the radius to a line, for example <code>120, 40 r5</code>.</li>
+  <li>The radius travels with the point when you stretch, turn or move edges.</li>
+</ul>
+
+<h3>Centre locks</h3>
+<p>While placing or dragging a point or hole, the cursor soft-locks when it comes within about 8 screen pixels of:</p>
+<ul>
+  <li>the <b>centre</b> of the shape (this wins when targets are close together),</li>
+  <li>the <b>middle</b> of any edge,</li>
+  <li>the <b>line</b> of another point or hole (same X or same Y).</li>
+</ul>
+<p>X and Y lock separately, so you can be centred left-to-right but free up-and-down. A pink dashed line shows each active lock. Hold Alt to ignore the locks, or turn them off under <b>Drawing options</b>, which also holds the grid snap (default 1 mm) and the edge-length labels.</p>
+
+<h3>Typing coordinates</h3>
+<p>Under <b>Type coordinates</b> in the left panel, the outline is listed one point per line. Edit it and press <b>Apply</b>.</p>
+<table>
+  <tr><th style="width:22%">Form</th><th>Meaning</th><th style="width:20%">Example</th></tr>
+  <tr><td><code>x, y</code></td><td>Absolute point</td><td><code>120, 40</code></td></tr>
+  <tr><td><code>@dx, dy</code></td><td>Relative to the previous point</td><td><code>@-20, 0</code></td></tr>
+  <tr><td><code>@length&lt;angle</code></td><td>Length and angle from the previous point</td><td><code>@50&lt;90</code></td></tr>
+</table>
+<p>Holes are listed below as <code>x, y, diameter</code>. The <b>Next point</b> box adds a single point while drawing, using the same forms.</p>
+
+<h2>4. Importing DXF files</h2>
+<p>Click <b>Import DXF</b> under Parts, or drop one or more <code>.dxf</code> files anywhere on the page. Each import adds new parts with quantity 1, moves them so their bottom-left corner sits at 0,0, and places them on the sheet. If the only part in the list is empty, the first import fills it.</p>
+<table>
+  <tr><th style="width:28%">DXF entity</th><th>How it is used</th></tr>
+  <tr><td>LINE, ARC</td><td>Joined end to end (within 0.05 mm) into closed outlines</td></tr>
+  <tr><td>LWPOLYLINE, POLYLINE</td><td>Read with their curved (bulge) segments; open or closed</td></tr>
+  <tr><td>CIRCLE</td><td>A hole if it sits inside an outline; otherwise a round part</td></tr>
+  <tr><td>ELLIPSE</td><td>Converted to points every 3°</td></tr>
+  <tr><td>SPLINE</td><td>Approximated through its fit or control points (reported)</td></tr>
+</table>
+<ul>
+  <li>Every closed outline that is not inside another becomes its own part, so one DXF can hold several parts.</li>
+  <li>Round shapes inside an outline become holes, including circles drawn as two-arc polylines.</li>
+  <li>Arcs become short straight segments within 0.01 mm of the true curve.</li>
+  <li>Units follow the file's <code>$INSUNITS</code> setting: inches, feet, cm and metres are converted to mm. If it is missing, mm is assumed.</li>
+</ul>
+<p><b>Left out</b> (listed in a message under the Parts list after import): cut-outs inside a part that are not round; open lines that do not form a closed shape; blocks (explode them in CAD first); text, dimensions, hatching and leaders; binary DXF files (save as ASCII DXF instead).</p>
+
+<h2>5. The sheet and nesting</h2>
+<p>The Sheet tab shows the sheet (310 × 300 mm by default) with its corner marked X0 Y0, the edge margin as a dashed line, and every placed part with its toolpath in orange and tabs as small squares.</p>
+<p><b>Quantities.</b> The number box beside each part sets how many are cut. Raising it places the new copies in free space without moving parts already placed; lowering it removes the most recently placed copies. A part with no closed outline is not placed.</p>
+<p><b>Nest.</b> Clears the sheet and lays out every copy again, largest parts first. Each part goes in the lowest free spot, filling rows from the front-left corner, and may be turned 90° if that fits better. Parts are kept the <b>Gap between parts</b> apart and the <b>Sheet edge margin</b> in from the edge. When a sheet is full, Nest starts another; step through sheets with ‹ and ›.</p>
+<table>
+  <tr><th style="width:18%">Action</th><th>Button</th><th style="width:30%">Key</th></tr>
+  <tr><td>Move</td><td>Drag the part (snaps to the grid)</td><td>Arrows: 1 mm, with Shift: 10 mm</td></tr>
+  <tr><td>Rotate 90°</td><td><b>Rotate 90°</b></td><td>R</td></tr>
+  <tr><td>Any angle</td><td>Type it in <b>Angle</b></td><td></td></tr>
+  <tr><td>Mirror</td><td><b>Mirror</b> (label shows "(M)")</td><td>M</td></tr>
+  <tr><td>Add a copy</td><td><b>Duplicate</b> (quantity goes up by 1)</td><td></td></tr>
+  <tr><td>Remove a copy</td><td><b>Remove</b> (quantity goes down by 1)</td><td>Delete</td></tr>
+</table>
+<p>Rotate and mirror keep the part centred where it was.</p>
+<p><b>Checks.</b> A part turns red, with a warning, if its cut runs off the sheet or it is closer than one cutter width to another part (the cutter would cut into it). Move it or press Nest again. Changing a part's shape does not move parts already on the sheet; if they now overlap they turn red, and Nest re-spaces them.</p>
+
+<h2>6. Settings</h2>
+<p>Settings sit in the right panel and apply to every part and sheet. The everyday ones are always visible; the rest are under <b>Advanced</b>, where <b>Reset settings</b> restores the defaults.</p>
+<table>
+  <tr><th style="width:28%">Always visible</th><th style="width:20%">Default</th><th>Notes</th></tr>
+  <tr><td>Sheet width (X) / height (Y)</td><td>310 / 300 mm</td><td></td></tr>
+  <tr><td>Thickness</td><td>2 mm</td><td></td></tr>
+  <tr><td>Material</td><td>Aluminium</td><td>Sets feed, plunge and step down (below)</td></tr>
+  <tr><td>Cutter diameter</td><td>6 mm</td><td>Used to offset the outline and size the holes</td></tr>
+  <tr><td>Gap between parts</td><td>20 mm</td><td>Used by Nest; must be at least the cutter diameter</td></tr>
+  <tr><td>Hold parts with tabs</td><td>On</td><td>Leaves small bridges so parts don't come loose</td></tr>
+</table>
+<table>
+  <tr><th>Material preset</th><th>Feed (mm/min)</th><th>Plunge (mm/min)</th><th>Step down (mm)</th></tr>
+  <tr><td>Aluminium</td><td>600</td><td>200</td><td>3</td></tr>
+  <tr><td>Plastic / ACM</td><td>900</td><td>250</td><td>3</td></tr>
+  <tr><td>Wood / MDF</td><td>1200</td><td>300</td><td>3</td></tr>
+</table>
+<p>There is no spindle speed setting. The G-code asks for full speed (<code>M3 S10000</code>), and GRBL caps that at the machine's own maximum.</p>
+<table>
+  <tr><th style="width:28%">Advanced</th><th style="width:20%">Default</th><th>Notes</th></tr>
+  <tr><td>Feed, Plunge, Step down</td><td>From material</td><td>Editable after picking a material</td></tr>
+  <tr><td>Cut below sheet</td><td>0.2 mm</td><td>Extra depth so the cut goes cleanly through</td></tr>
+  <tr><td>Safe Z</td><td>5 mm</td><td>Height for moves between cuts</td></tr>
+  <tr><td>Sheet edge margin</td><td>25 mm</td><td>Space Nest leaves at the sheet edge</td></tr>
+  <tr><td>Direction</td><td>Climb</td><td>Climb or conventional milling</td></tr>
+  <tr><td>Let Nest turn parts 90°</td><td>On</td><td></td></tr>
+  <tr><td>Tabs per part</td><td>1</td><td>More than one are spaced evenly round the outline</td></tr>
+  <tr><td>Tab width / height</td><td>3 mm / 0.6 mm</td><td>Size of the bridge left on the part</td></tr>
+  <tr><td>Decimals</td><td>3</td><td>Decimal places in the G-code</td></tr>
+</table>
+<p>Parts and settings are remembered by the browser on that computer between visits. When the defaults change in a new version, saved settings are replaced by the new defaults once; saved parts are kept.</p>
+
+<h2>7. G-code output</h2>
+<p><b>Download G-code</b> saves the current sheet as an <code>.nc</code> file named from the <b>File name</b> box (default <code>job.nc</code>). With more than one sheet, files are named <code>job-sheet1.nc</code>, <code>job-sheet2.nc</code> and so on, and <b>All sheets</b> downloads them all. <b>Show G-code</b> displays the text; the stats line gives the part count, passes, line count and a rough time.</p>
+<p><b>Zero point:</b> X0 Y0 is the front-left corner of the sheet; Z0 is the top surface of the sheet.</p>
+<ol>
+  <li>Header comments: job name, sheet number, sheet size, part count, cutter and depth.</li>
+  <li><code>G21 G90 G17 G94</code>: millimetres, absolute positions, XY plane, feed in mm/min.</li>
+  <li>Lift to Safe Z, start the spindle at full speed (<code>M3 S10000</code>) and wait 2 seconds for it to reach speed.</li>
+  <li><b>All holes first</b>, while every part is still held by the sheet: nearest-next order, each a helix spiralling down one step per turn (G2/G3 arcs), then one flat pass at full depth. A hole no bigger than the cutter is drilled in steps instead.</li>
+  <li><b>Then each outline</b>, nearest-next, cut to full depth before moving on. The cut starts mid-way along the longest straight edge, not on a corner.</li>
+  <li>Stop the spindle (<code>M5</code>), return to X0 Y0 and end (<code>M30</code>).</li>
+</ol>
+<p><b>Depth and passes.</b> Total depth is the thickness plus <b>Cut below sheet</b> (2.2 mm by default), split into equal passes no deeper than <b>Step down</b>. With the 3 mm default step, 2 mm sheet is cut in a single 2.2 mm pass; thicker sheet or a smaller step gives more passes.</p>
+<p><b>Tabs.</b> On passes deeper than the tab height, the cutter lifts to the tab top over each tab. With the defaults, the single pass lifts to Z-1.6 over the tab, leaving a 3 mm wide, 0.6 mm thick bridge. The tab length along the path includes the cutter diameter, so the bridge left on the part is the width you set.</p>
+<p><b>Outline offset.</b> The cutter runs one radius outside the drawn outline, so the part comes out at the drawn size. Outside corners are rounded by the cutter path; inside corners are left with a radius equal to the cutter radius.</p>
+
+<h2>8. Simulator</h2>
+<p>The Simulate tab plays back the G-code text itself, line by line, so it shows exactly what the machine will be sent. It plays the sheet selected in the Sheet tab.</p>
+<p><b>Controls:</b> Play/Pause (or Space), Restart, Speed (1×, 5×, 20×, 60× or 200×; 20× by default) and a slider to jump to any point. Drag to pan; the wheel zooms. <b>Readout:</b> G-code line number, cutter X, Y and Z, and time so far against the total.</p>
+<table>
+  <tr><th style="width:28%">On screen</th><th>Meaning</th></tr>
+  <tr><td>Light tan band</td><td>Cut part of the way through</td></tr>
+  <tr><td>Dark brown band</td><td>Cut right through; tabs stay lighter so you can see them</td></tr>
+  <tr><td>Dashed blue line</td><td>Move in the air (rapid)</td></tr>
+  <tr><td>Orange circle</td><td>Cutter in the material, at its real size</td></tr>
+  <tr><td>Blue circle</td><td>Cutter above the material</td></tr>
+  <tr><td>Z gauge (right)</td><td>Cutter height against the sheet thickness</td></tr>
+</table>
+<p>The time is an estimate: cutting moves use the feed rates in the file, and moves in the air assume 1500 mm/min, because the machine's real rapid speed has not been measured.</p>
+
+<h2>9. Machine tab: sending to the CNC</h2>
+<p>The Machine tab drives the CNC directly from SimpleCAM, so Candle is not needed. It works in <b>Chrome or Edge</b> only; Firefox cannot talk to USB serial ports.</p>
+<p><b>Connecting.</b> The machine must first show up in Windows as a COM port (Device Manager → Ports, usually <i>USB-SERIAL CH340</i>; if not, install the CH340 driver). Click <b>Connect</b>: the browser asks you to choose the serial device, once. There is no COM number or baud rate to set; SimpleCAM uses 115200, GRBL's standard. Only one program can use the port at a time, so close Candle first.</p>
+<p><b>Simulated machine.</b> Click <b>Simulated machine</b> instead of Connect to practise with a pretend controller that runs inside SimpleCAM: no CNC, cable or driver needed. It answers like GRBL 1.1 on the 3030: moves take real time at their feed rates, and jog, zero, pause, stop, alarms and error messages all work. Homing reports "not enabled", as on a machine without limit switches. <b>Sim speed</b> (1×, 5×, 20×) runs it faster than real life. The status shows <i>Simulated</i> so it can't be mistaken for the real machine. Use it for training, and to check a job streams cleanly before cutting. It does not test the USB cable, driver or port.</p>
+<p><b>Status bar:</b> the state (Idle, Run, Hold, Jog, Alarm) and the position in work coordinates, updated four times a second.</p>
+<table>
+  <tr><th style="width:24%">Control</th><th>What it does</th></tr>
+  <tr><td>Jog</td><td>Moves by the chosen step (0.1, 1, 10 or 50 mm) at the jog speed. Uses GRBL jogging, so a jog can be cancelled with Stop. There are no keyboard jog shortcuts, so a stray key press cannot move the machine.</td></tr>
+  <tr><td>Zero X Y here / Zero Z here</td><td>Sets the work zero at the current position (<code>G10 L20 P1</code>).</td></tr>
+  <tr><td>Lift to Z5, go to X0 Y0</td><td>Lifts the cutter to Z5 first (or to Safe Z if that is higher), and only then moves to X0 Y0. If the cutter is already higher, it stays at that height and never moves down.</td></tr>
+  <tr><td>Unlock</td><td>Clears an alarm (<code>$X</code>). Check why it alarmed first.</td></tr>
+  <tr><td>Home</td><td>Runs the homing cycle (<code>$H</code>). Only if the machine has limit switches and homing is turned on.</td></tr>
+  <tr><td>Start</td><td>Sends the sheet shown on the Sheet tab, after a checklist prompt. Blocked if any part is red.</td></tr>
+  <tr><td>Pause / Resume</td><td>Feed hold and cycle start: the machine slows to a stop and waits, then carries on.</td></tr>
+  <tr><td>Stop</td><td>Holds, waits for the machine to stop, then resets GRBL. This switches the spindle off and keeps the position.</td></tr>
+  <tr><td>Console</td><td>Everything sent and received, plus a box to type commands such as <code>$$</code> (show settings).</td></tr>
+</table>
+<p><b>During a job</b> the sheet view shades the toolpath up to the last line GRBL accepted, and the circle shows where the machine actually is. Jog and zero are locked until the job ends. If GRBL rejects a line or raises an alarm, the job stops and the console says why. If the cable is pulled, SimpleCAM reports it; the machine finishes what it already has in its buffer, so be ready at the stop button. The browser warns before closing the page during a job.</p>
+<p class="note">The physical stop button on the machine always comes first. The Stop button in SimpleCAM depends on the USB connection.</p>
+
+<h2>10. Running a job on the 3030-PROVer Ultra</h2>
+<p>Run it from the Machine tab, or download the <code>.nc</code> file and use any GRBL sender, such as Candle or Universal Gcode Sender.</p>
+<ul class="check">
+  <li>Check the sheet size and thickness in SimpleCAM match the real sheet.</li>
+  <li>Check there are no warnings and no part is red.</li>
+  <li>Play the sheet in the Simulate tab to the end.</li>
+  <li>Connect on the Machine tab (or download the <code>.nc</code> file for Candle).</li>
+  <li>Fit the cutter set in SimpleCAM (6 mm by default).</li>
+  <li>Clamp the sheet flat on a spoilboard; the cut goes 0.2 mm below the sheet.</li>
+  <li>Keep clamps clear of the parts and of the sheet edge margin.</li>
+  <li>Jog to the front-left corner of the sheet and set X0 Y0.</li>
+  <li>Touch off on the top of the sheet and set Z0.</li>
+  <li>For a new material or setting, zero Z about 10 mm above the sheet and do a run in the air first.</li>
+  <li>Run the job. Keep a hand near the stop button and wear eye and ear protection; aluminium chips fly.</li>
+  <li>Cut the parts free at the tabs and file the tab marks flush.</li>
+</ul>
+
+<h2>11. Limitations and things to check</h2>
+<ul>
+  <li><b>Not yet proven on the machine.</b> Run the first jobs in the air, then on scrap.</li>
+  <li><b>The Machine tab is tested against the simulated machine only</b>, not yet the real 3030. Try it first with the cutter well above the sheet.</li>
+  <li><b>The simulated machine is a simplification:</b> it starts and stops instantly (no acceleration), has no limit switches or soft limits, and runs rapids at 1500 mm/min.</li>
+  <li><b>Machine tab needs Chrome or Edge.</b> It does not work in Firefox.</li>
+  <li><b>Feeds and speeds are starting values</b>, not tested figures. Adjust them after a test cut and note what works.</li>
+  <li><b>No working-area check.</b> SimpleCAM does not know the machine's travel; make sure the sheet fits the bed.</li>
+  <li><b>Only round holes.</b> Square slots and other inside cut-outs cannot be drawn, and are left out of DXF imports.</li>
+  <li><b>Nest packs rectangles.</b> It uses each part's bounding box, so shapes do not interlock. Parts can be moved closer by hand; the red check stops them going too close.</li>
+  <li><b>One cutter per job.</b> No tool changes; holes use the same cutter as the outline.</li>
+  <li><b>Inside corners keep a radius</b> of at least the cutter radius (3 mm with a 6 mm cutter), whatever corner radius is drawn.</li>
+  <li><b>DXF arcs become straight segments.</b> Editing one only changes that short segment, not the whole arc.</li>
+  <li><b>Saved data stays in one browser.</b> It is not shared, and clearing browser data removes it.</li>
+  <li><b>No lead-in.</b> The cutter plunges straight down at the plunge rate, mid-way along the longest edge.</li>
+  <li><b>Rough time estimates.</b> Rapid moves are assumed at 1500 mm/min.</li>
+</ul>
+
+<h2>12. Technical reference</h2>
+<table>
+  <tr><th style="width:20%">Tab</th><th style="width:26%">Key</th><th>Action</th></tr>
+  <tr><td>All</td><td>Ctrl+Z</td><td>Undo</td></tr>
+  <tr><td>All</td><td>F</td><td>Fit view</td></tr>
+  <tr><td>All</td><td>Wheel, middle-drag</td><td>Zoom, pan</td></tr>
+  <tr><td>Draw part</td><td>D / H / E / P</td><td>Draw / Hole / Edit / Pan mode</td></tr>
+  <tr><td>Draw part</td><td>Enter</td><td>Close the shape</td></tr>
+  <tr><td>Draw part</td><td>Backspace, right-click</td><td>Remove last point while drawing</td></tr>
+  <tr><td>Draw part</td><td>Delete</td><td>Remove selected point or hole</td></tr>
+  <tr><td>Draw part</td><td>Shift (drawing)</td><td>Straight horizontal or vertical line</td></tr>
+  <tr><td>Draw part</td><td>Alt (placing)</td><td>Ignore centre locks</td></tr>
+  <tr><td>Draw part, Sheet</td><td>Space (hold)</td><td>Pan</td></tr>
+  <tr><td>Draw part, Sheet</td><td>Esc</td><td>Clear the selection</td></tr>
+  <tr><td>Sheet</td><td>R / M</td><td>Rotate 90° / mirror</td></tr>
+  <tr><td>Sheet</td><td>Arrows (+Shift)</td><td>Nudge 1 mm (10 mm)</td></tr>
+  <tr><td>Sheet</td><td>Delete</td><td>Remove the selected copy</td></tr>
+  <tr><td>Simulate</td><td>Space</td><td>Play / pause</td></tr>
+</table>
+<h3>How it works</h3>
+<ul>
+  <li><b>Toolpath offset:</b> each outline is set anticlockwise, then every edge moves out one cutter radius. Outside corners get an arc in 6° steps (under 0.01 mm from a true arc); inside corners meet where the two offset edges cross. Climb milling runs the path clockwise round the outside.</li>
+  <li><b>Checks:</b> the toolpath is checked for crossing itself, and every pair of parts is measured edge to edge; parts closer than one cutter diameter are flagged.</li>
+  <li><b>Nesting:</b> a bottom-left fill on bounding boxes. Candidate spots are the margin corner and the spots just right of and just above each placed part, plus the gap. The lowest top edge wins, then the leftmost; 0° and 90° are tried.</li>
+  <li><b>Simulator:</b> re-reads the G-code text (G0–G4, F, X, Y, Z, I, J), splits arcs into 5° steps and times each move from its feed rate.</li>
+  <li><b>Machine tab:</b> Web Serial at 115200 baud. Lines are streamed with character counting, so no more than 127 bytes wait in GRBL's 128-byte receive buffer. Status is polled with <code>?</code> every 250 ms; Pause sends <code>!</code>, Resume <code>~</code>, Stop sends <code>!</code> then a soft reset (Ctrl-X) once the state reads Hold:0. The lines sent are exactly those in the downloaded file, without comments.</li>
+  <li><b>DXF import:</b> reads ASCII group codes from the ENTITIES section and joins open pieces whose ends are within 0.05 mm. Outlines are sorted by area so outer shapes are found before the shapes inside them.</li>
+</ul>
+<table>
+  <tr><th style="width:20%">Item</th><th>Detail</th></tr>
+  <tr><td>Program</td><td><code>SimpleCAM.html</code>: one self-contained file with no external libraries; the logo is built in</td></tr>
+  <tr><td>Browser</td><td>Any current Chrome or Edge (Firefox works for everything except the Machine tab)</td></tr>
+  <tr><td>Saved data</td><td>Browser local storage, key <code>simplecam-v1</code>: parts (corner radius stored per point as <code>r</code>), placements and settings</td></tr>
+  <tr><td>Output</td><td><code>.nc</code> text files, GRBL G-code, millimetres</td></tr>
+</table>
+
+</body>
+</html>

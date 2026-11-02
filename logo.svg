@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
+  <title>SimpleCAM</title>
+  <!-- tile -->
+  <rect width="64" height="64" rx="14" fill="#1f6feb"/>
+  <!-- cutter path, one radius outside the part -->
+  <rect x="12" y="18" width="40" height="28" rx="4" fill="none" stroke="#ffb27a" stroke-width="2.5"/>
+  <!-- the part with two holes -->
+  <rect x="16" y="22" width="32" height="20" rx="1.5" fill="#fff"/>
+  <circle cx="24" cy="32" r="3" fill="#1f6feb"/>
+  <circle cx="40" cy="32" r="3" fill="#1f6feb"/>
+  <!-- cutter -->
+  <circle cx="52" cy="28" r="4.5" fill="#e5531a" stroke="#fff" stroke-width="1.5"/>
+</svg>

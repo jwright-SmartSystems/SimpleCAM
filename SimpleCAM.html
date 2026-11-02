@@ -1,0 +1,2001 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimpleCAM</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f6feb'/%3E%3Crect x='12' y='18' width='40' height='28' rx='4' fill='none' stroke='%23ffb27a' stroke-width='2.5'/%3E%3Crect x='16' y='22' width='32' height='20' rx='1.5' fill='%23fff'/%3E%3Ccircle cx='24' cy='32' r='3' fill='%231f6feb'/%3E%3Ccircle cx='40' cy='32' r='3' fill='%231f6feb'/%3E%3Ccircle cx='52' cy='28' r='4.5' fill='%23e5531a' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#f4f5f7;--panel:#fff;--line:#d8dbe0;--text:#1d2433;--muted:#667085;--accent:#1f6feb;--warn:#b54708;--warnbg:#fff4e5}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font:13px/1.4 system-ui,"Segoe UI",sans-serif;color:var(--text);background:var(--bg);display:grid;grid-template-columns:270px minmax(420px,1fr) 300px;overflow:auto}
+aside{background:var(--panel);overflow:auto;padding:12px}
+aside.left{border-right:1px solid var(--line)}
+aside.right{border-left:1px solid var(--line)}
+h1{font-size:15px;margin:0 0 2px}
+h1.brand{display:flex;align-items:center;gap:8px;font-size:17px}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 6px}
+p.note{color:var(--muted);margin:0 0 6px;font-size:12px}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0}
+label.check{justify-content:flex-start}
+input[type=number],input[type=text],select{width:100px;padding:3px 5px;border:1px solid var(--line);border-radius:4px;font:inherit}
+textarea{width:100%;font:12px/1.35 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:4px;padding:6px;resize:vertical}
+button{font:inherit;padding:4px 10px;border:1px solid var(--line);background:#fff;border-radius:4px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:default;border-color:var(--line)}
+button.on,button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.err{color:#c4320a;font-size:12px}
+details{border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin:10px 0}
+details summary{cursor:pointer;font-weight:600;font-size:12px}
+details[open] summary{margin-bottom:6px}
+.parts{display:flex;flex-direction:column;gap:4px}
+.part{display:grid;grid-template-columns:1fr 52px auto;gap:4px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.part.on{border-color:var(--accent);background:#f0f6ff}
+.part input[type=text]{width:100%}
+.part input[type=number]{width:52px}
+.part .size{grid-column:1/-1;font-size:11px;color:var(--muted)}
+.part button{padding:2px 7px}
+#stage{position:relative;min-width:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:0;background:var(--panel);border-bottom:1px solid var(--line)}
+.tabs button{border:0;border-radius:0;border-bottom:2px solid transparent;padding:9px 16px;background:none;font-weight:600;color:var(--muted)}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent);background:none}
+.toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line)}
+.toolbar .sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+.toolbar input[type=number]{width:62px}
+.canvasWrap{position:relative;flex:1;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#fff}
+.hud{position:absolute;bottom:8px;left:8px;right:8px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;font-size:12px;color:var(--muted)}
+.hud span{background:rgba(255,255,255,.92);padding:3px 6px;border-radius:4px;border:1px solid var(--line)}
+#warn div{background:var(--warnbg);color:var(--warn);padding:5px 7px;border-radius:4px;margin:4px 0;font-size:12px}
+#stats{font-size:12px;color:var(--muted);margin:6px 0}
+#gcode{height:260px;white-space:pre}
+.editPanel{position:absolute;top:8px;right:8px;width:230px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;box-shadow:0 4px 14px rgba(16,24,40,.12)}
+.editPanel .ep-title{font-weight:600;margin-bottom:4px}
+.editPanel input[type=number]{width:80px}
+.editPanel p.note{margin:6px 0 0;font-size:11px}
+.machinePanel{width:260px;max-height:calc(100% - 16px);overflow:auto}
+.machinePanel .ep-title{margin-top:8px}
+.seg button{padding:3px 8px}
+.machinePanel .jog{display:grid;grid-template-columns:repeat(4,46px);gap:4px;margin:6px 0}
+.machinePanel .jog button{padding:6px 0}
+.bar{height:8px;background:#eef0f3;border-radius:4px;overflow:hidden;margin:4px 0}
+.bar div{height:100%;width:0;background:var(--accent)}
+#mcConsole{height:140px;overflow:auto;background:#0f1520;color:#d0d7e2;font:11px/1.35 ui-monospace,Consolas,monospace;padding:6px;border-radius:4px;margin:6px 0;white-space:pre-wrap}
+.pill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#eef0f3;color:var(--muted);white-space:nowrap}
+/* The machine bar must never change height: a wrap would resize the canvas and make the sheet jump. */
+#machineBar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+#machineBar::-webkit-scrollbar{display:none}
+#machineBar > *{flex-shrink:0}
+#mcState{min-width:150px;text-align:center}
+#mcPos{font:12px ui-monospace,Consolas,monospace;color:var(--muted);white-space:pre;min-width:33ch}
+.pill.st-idle{background:#dcfae6;color:#067647}.pill.st-run,.pill.st-jog{background:#dbeafe;color:#1e4fd8}
+.pill.st-hold{background:#fef0c7;color:#93370d}.pill.st-alarm{background:#fee4e2;color:#b42318}
+button.danger{border-color:#d92d20;color:#b42318}
+button.danger:disabled{color:inherit}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<aside class="left">
+  <h1 class="brand"><svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1f6feb"/><rect x="12" y="18" width="40" height="28" rx="4" fill="none" stroke="#ffb27a" stroke-width="2.5"/><rect x="16" y="22" width="32" height="20" rx="1.5" fill="#fff"/><circle cx="24" cy="32" r="3" fill="#1f6feb"/><circle cx="40" cy="32" r="3" fill="#1f6feb"/><circle cx="52" cy="28" r="4.5" fill="#e5531a" stroke="#fff" stroke-width="1.5"/></svg>SimpleCAM</h1>
+  <p class="note">Genmitsu 3030-PROVer Ultra · GRBL · mm</p>
+
+  <h2>Parts</h2>
+  <div class="parts" id="partsList"></div>
+  <div class="row"><button id="newPart">+ New part</button><button id="importDxf">Import DXF</button><input type="file" id="dxfFile" accept=".dxf" multiple class="hidden"></div>
+  <p class="note" id="importMsg"></p>
+  <p class="note">Set how many of each part you need, then nest them on the sheet. You can also drop DXF files onto the page.</p>
+
+  <details id="coordBox">
+    <summary>Type coordinates</summary>
+    <p class="note">One per line: <code>x, y</code>, <code>@dx, dy</code> (relative) or <code>@length&lt;angle</code>.</p>
+    <textarea id="ptsText" rows="8" spellcheck="false"></textarea>
+    <p class="note" style="margin-top:6px">Holes: <code>x, y, diameter</code> per line.</p>
+    <textarea id="holesText" rows="3" spellcheck="false"></textarea>
+    <div class="row"><button class="primary" id="applyText">Apply</button><span class="err" id="textErr"></span></div>
+    <p class="note">Next point while drawing:</p>
+    <div class="row"><input type="text" id="nextPt" placeholder="@50<90" style="width:130px"><button id="addNext">Add</button></div>
+  </details>
+
+  <details>
+    <summary>Drawing options</summary>
+    <label>Grid snap (mm) <select id="snap"><option value="0">Off</option><option value="0.1">0.1</option><option value="0.5">0.5</option><option value="1">1</option><option value="5">5</option><option value="10">10</option></select></label>
+    <label class="check"><input type="checkbox" id="dims"> Show edge lengths</label>
+    <label class="check"><input type="checkbox" id="guides"> Lock to centre, middles and lines (hold Alt to ignore)</label>
+  </details>
+</aside>
+
+<main id="stage">
+  <div class="tabs">
+    <button data-tab="part">1 · Draw part</button>
+    <button data-tab="sheet">2 · Sheet</button>
+    <button data-tab="sim">3 · Simulate</button>
+    <button data-tab="machine">4 · Machine</button>
+  </div>
+  <div class="toolbar" id="partBar">
+    <button data-mode="draw">Draw</button>
+    <button data-mode="hole">Hole</button>
+    <label style="margin:0">Ø <input type="number" id="holeD" step="0.1" min="0.1"></label>
+    <button data-mode="edit">Edit</button>
+    <button data-mode="pan">Pan</button>
+    <span class="sep"></span>
+    <button id="closeShape">Close shape</button>
+    <button id="clearShape">Clear</button>
+    <button class="undo">Undo</button>
+    <button class="fit">Fit</button>
+  </div>
+  <div class="toolbar hidden" id="sheetBar">
+    <button class="primary" id="nest">Nest</button>
+    <span class="sep"></span>
+    <button id="rot90" title="R">Rotate 90°</button>
+    <label style="margin:0">Angle <input type="number" id="angle" step="1"></label>
+    <button id="mirror" title="M">Mirror</button>
+    <button id="dupe">Duplicate</button>
+    <button id="remove" title="Delete">Remove</button>
+    <span class="sep"></span>
+    <button id="prevSheet">‹</button><span id="sheetLabel">Sheet 1 of 1</span><button id="nextSheet">›</button>
+    <span class="sep"></span>
+    <button class="undo">Undo</button>
+    <button class="fit">Fit</button>
+  </div>
+  <div class="toolbar hidden" id="simBar">
+    <button class="primary" id="simPlay" style="min-width:64px">Play</button>
+    <button id="simRestart">Restart</button>
+    <label style="margin:0">Speed <select id="simSpeed" style="width:70px"><option value="1">1×</option><option value="5">5×</option><option value="20" selected>20×</option><option value="60">60×</option><option value="200">200×</option></select></label>
+    <input type="range" id="simScrub" min="0" max="1000" value="0" style="flex:1;min-width:120px">
+    <span id="simInfo" style="font:12px ui-monospace,Consolas,monospace;color:var(--muted)"></span>
+    <button class="fit">Fit</button>
+  </div>
+  <div class="toolbar hidden" id="machineBar">
+    <button class="primary" id="mcConnect">Connect</button>
+    <button id="mcConnectSim" title="Practise with a pretend machine: no CNC or cable needed">Simulated machine</button>
+    <label id="mcSimSpeedWrap" class="hidden" style="margin:0">Sim speed <select id="mcSimSpeed" style="width:64px"><option value="1">1×</option><option value="5">5×</option><option value="20">20×</option></select></label>
+    <span class="pill" id="mcState">Disconnected</span>
+    <span id="mcPos"></span>
+    <button class="fit">Fit</button>
+  </div>
+  <div class="canvasWrap">
+    <canvas id="cv"></canvas>
+    <div class="editPanel hidden" id="editPanel"></div>
+    <div class="editPanel machinePanel hidden" id="machinePanel">
+      <div class="ep-title">Jog</div>
+      <div class="row seg" id="mcSteps"><button data-step="0.1">0.1</button><button data-step="1">1</button><button data-step="10">10</button><button data-step="50">50</button><span class="note">mm</span></div>
+      <div class="jog">
+        <span></span><button data-jog="Y" data-dir="1">Y+</button><span></span><button data-jog="Z" data-dir="1">Z+</button>
+        <button data-jog="X" data-dir="-1">X−</button><span></span><button data-jog="X" data-dir="1">X+</button><span></span>
+        <span></span><button data-jog="Y" data-dir="-1">Y−</button><span></span><button data-jog="Z" data-dir="-1">Z−</button>
+      </div>
+      <label>Jog speed <span><input type="number" id="mcJogF" value="1000" step="100" min="10"> mm/min</span></label>
+      <div class="ep-title">Zero</div>
+      <div class="row"><button id="mcZeroXY">Zero X Y here</button><button id="mcZeroZ">Zero Z here</button></div>
+      <div class="row"><button id="mcGoXY" title="Lifts to Z5 first (or stays higher if already above), then moves to X0 Y0">Lift to Z5, go to X0 Y0</button><button id="mcUnlock">Unlock</button><button id="mcHome">Home</button></div>
+      <div class="ep-title">Job</div>
+      <p class="note" id="mcJobInfo"></p>
+      <div class="row"><button class="primary" id="mcStart">Start</button><button id="mcPause">Pause</button><button id="mcStop" class="danger">Stop</button></div>
+      <div class="bar"><div id="mcBar"></div></div>
+      <details><summary>Console</summary>
+        <pre id="mcConsole"></pre>
+        <div class="row"><input type="text" id="mcCmd" placeholder="$$ or a G-code line" style="flex:1;width:auto"><button id="mcCmdSend">Send</button></div>
+      </details>
+    </div>
+    <div class="hud"><span id="help"></span><span id="coords"></span></div>
+  </div>
+</main>
+
+<aside class="right">
+  <h2 style="margin-top:0">Sheet</h2>
+  <label>Width (X) <input type="number" id="sheetW" step="1" min="10"></label>
+  <label>Height (Y) <input type="number" id="sheetH" step="1" min="10"></label>
+  <label>Thickness <input type="number" id="thick" step="0.1" min="0.1"></label>
+
+  <h2>Cutting</h2>
+  <label>Material <select id="material"><option value="alu">Aluminium</option><option value="plastic">Plastic / ACM</option><option value="wood">Wood / MDF</option></select></label>
+  <label>Cutter diameter <input type="number" id="tool" step="0.001" min="0.1"></label>
+  <label>Gap between parts <input type="number" id="gap" step="0.5" min="0"></label>
+  <label class="check"><input type="checkbox" id="tabsOn"> Hold parts with tabs</label>
+
+  <details>
+    <summary>Advanced</summary>
+    <p class="note">Material sets feed, plunge, step down and speed. They are starting values: do a test cut.</p>
+    <label>Feed (mm/min) <input type="number" id="feed" step="10" min="1"></label>
+    <label>Plunge (mm/min) <input type="number" id="plunge" step="10" min="1"></label>
+    <label>Step down per pass <input type="number" id="step" step="0.05" min="0.01"></label>
+    <label>Cut below sheet <input type="number" id="over" step="0.05" min="0"></label>
+    <label>Safe Z <input type="number" id="safe" step="0.5" min="0.5"></label>
+    <label>Sheet edge margin <input type="number" id="margin" step="1" min="0"></label>
+    <label>Direction <select id="dir"><option value="climb">Climb</option><option value="conventional">Conventional</option></select></label>
+    <label class="check"><input type="checkbox" id="rotate"> Let Nest turn parts 90°</label>
+    <label>Tabs per part <input type="number" id="tabs" step="1" min="1"></label>
+    <label>Tab width <input type="number" id="tabW" step="0.5" min="0.5"></label>
+    <label>Tab height <input type="number" id="tabH" step="0.1" min="0.1"></label>
+    <label>Decimals <input type="number" id="dec" step="1" min="1" max="4"></label>
+    <div class="row"><button id="resetSet">Reset settings</button></div>
+  </details>
+
+  <h2>G-code</h2>
+  <label>File name <input type="text" id="name" style="width:150px"></label>
+  <div class="row"><button class="primary" id="download">Download this sheet</button><button id="downloadAll" class="hidden">All sheets</button></div>
+  <div id="warn"></div>
+  <div id="stats"></div>
+  <p class="note">Zero X/Y on the front-left corner of the sheet and Z on its top surface.</p>
+  <details><summary>Show G-code</summary><textarea id="gcode" readonly spellcheck="false"></textarea></details>
+</aside>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const KEY = 'simplecam-v1', OLD_KEY = 'endcap-nest-v1';   // read the old key once so earlier work carries over
+
+const MATERIALS = {
+  alu:     {feed:600,  plunge:200, step:3},
+  plastic: {feed:900,  plunge:250, step:3},
+  wood:    {feed:1200, plunge:300, step:3}};
+// Team defaults, 2026-10-30. Bump SET_VERSION whenever defaults change so saved settings are replaced once.
+const SET_VERSION = 2;
+const DEF_SET = {sheetW:310, sheetH:300, thick:2, material:'alu', tool:6, gap:20, tabsOn:true,
+  ...MATERIALS.alu, over:0.2, safe:5, margin:25, dir:'climb', rotate:true, tabs:1, tabW:3, tabH:0.6, dec:3,
+  snap:'1', dims:true, guides:true, holeD:5, name:'job'};
+const SAMPLE = {nextId:2, placed:[], parts:[{id:1, name:'Part 1', qty:4, closed:true,
+  pts:[{x:0,y:0},{x:120,y:0},{x:120,y:40},{x:100,y:40},{x:100,y:20},{x:20,y:20},{x:20,y:40},{x:0,y:40}],
+  holes:[{x:10,y:10,d:8},{x:110,y:10,d:8}]}]};
+
+let doc = JSON.parse(JSON.stringify(SAMPLE));
+let set = {...DEF_SET};
+let curId = 1, tab = 'part', sheetIdx = 0, mode = 'edit';
+const views = {part:{scale:4, ox:60, oy:400}, sheet:{scale:2, ox:40, oy:600}, sim:{scale:2, ox:40, oy:600}, machine:{scale:2, ox:40, oy:600}};
+let res = null, cursor = null, drag = null, selected = null, selInst = null, spaceDown = false;
+let dimRects = [], stretch = true, guides = {x:null, y:null};
+const hist = [];
+
+/* ---------- vectors & geometry ---------- */
+const sub = (a,b) => ({x:a.x-b.x, y:a.y-b.y});
+const add = (a,b) => ({x:a.x+b.x, y:a.y+b.y});
+const mul = (a,k) => ({x:a.x*k, y:a.y*k});
+const dot = (a,b) => a.x*b.x + a.y*b.y;
+const cross = (a,b) => a.x*b.y - a.y*b.x;
+const len = a => Math.hypot(a.x, a.y);
+const norm = a => { const l = len(a) || 1; return {x:a.x/l, y:a.y/l}; };
+const lerp = (a,b,t) => ({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t});
+const r4 = v => Math.round(v*1e4)/1e4;
+const rp = p => ({x:r4(p.x), y:r4(p.y)});
+
+function area(p){ let a=0; for(let i=0;i<p.length;i++){ const q=p[i], r=p[(i+1)%p.length]; a += q.x*r.y - r.x*q.y; } return a/2; }
+function clean(p){
+  const out = [];
+  for (const q of p) if (!out.length || len(sub(q, out[out.length-1])) > 1e-6) out.push(q);
+  while (out.length > 1 && len(sub(out[0], out[out.length-1])) < 1e-6) out.pop();
+  return out;
+}
+// Offset a CCW polygon by d (positive = outward). Convex corners get an arc, concave corners a line intersection.
+function offsetPoly(poly, d, arcStep){
+  const n = poly.length, out = [];
+  for (let i=0;i<n;i++){
+    const p0 = poly[(i-1+n)%n], v = poly[i], p1 = poly[(i+1)%n];
+    const a = norm(sub(v,p0)), b = norm(sub(p1,v));
+    const na = {x:a.y, y:-a.x}, nb = {x:b.y, y:-b.x};
+    const turn = cross(a,b);
+    if (turn*d > 1e-9){
+      const t0 = Math.atan2(na.y, na.x), dt = Math.atan2(cross(na,nb), dot(na,nb));
+      const steps = Math.max(1, Math.ceil(Math.abs(dt)/arcStep));
+      for (let k=0;k<=steps;k++){ const t = t0 + dt*k/steps; out.push({x:v.x+d*Math.cos(t), y:v.y+d*Math.sin(t)}); }
+    } else {
+      const pa = add(v, mul(na,d)), pb = add(v, mul(nb,d));
+      if (Math.abs(turn) < 1e-9) out.push(pa);
+      else { const s = cross(sub(pb,pa), b)/turn; out.push(add(pa, mul(a,s))); }
+    }
+  }
+  return clean(out);
+}
+function segCross(a,b,c,d){
+  const e = 1e-9;
+  const d1 = cross(sub(b,a), sub(c,a)), d2 = cross(sub(b,a), sub(d,a));
+  const d3 = cross(sub(d,c), sub(a,c)), d4 = cross(sub(d,c), sub(b,c));
+  return ((d1>e && d2<-e) || (d1<-e && d2>e)) && ((d3>e && d4<-e) || (d3<-e && d4>e));
+}
+function selfCrosses(p){
+  const n = p.length;
+  for (let i=0;i<n;i++) for (let j=i+2;j<n;j++){
+    if (i===0 && j===n-1) continue;
+    if (segCross(p[i], p[(i+1)%n], p[j], p[(j+1)%n])) return true;
+  }
+  return false;
+}
+function inPoly(pt, poly){
+  let inside = false;
+  for (let i=0, j=poly.length-1; i<poly.length; j=i++){
+    const a = poly[i], b = poly[j];
+    if ((a.y > pt.y) !== (b.y > pt.y) && pt.x < (b.x-a.x)*(pt.y-a.y)/(b.y-a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+function ptSeg(p, a, b){ const ab = sub(b,a), t = Math.max(0, Math.min(1, dot(sub(p,a), ab)/(dot(ab,ab) || 1))); return len(sub(p, lerp(a,b,t))); }
+// Shortest distance between two closed outlines (0 if they cross or one is inside the other).
+function polyDist(A, B){
+  if (inPoly(A[0], B) || inPoly(B[0], A)) return 0;
+  let m = Infinity;
+  for (let i=0;i<A.length;i++){
+    const a = A[i], b = A[(i+1)%A.length];
+    for (let j=0;j<B.length;j++){
+      const c = B[j], d = B[(j+1)%B.length];
+      if (segCross(a,b,c,d)) return 0;
+      m = Math.min(m, ptSeg(a,c,d), ptSeg(b,c,d), ptSeg(c,a,b), ptSeg(d,a,b));
+    }
+  }
+  return m;
+}
+
+/* ---------- parts & placements ---------- */
+const P = () => doc.parts.find(p => p.id === curId);
+const partById = id => doc.parts.find(p => p.id === id);
+const placeable = p => p && p.closed && p.pts.length >= 3;
+
+// The outline as cut: points stay sharp in the drawing, and a point with a radius (pt.r) is replaced by an arc
+// tangent to both edges. The arc is shrunk if it would use more than half of either edge.
+function shapePts(part){
+  const p = part.pts, n = p.length;
+  if (!part.closed || n < 3 || !p.some(q => q.r > 0)) return p;
+  const out = [];
+  for (let i=0;i<n;i++){
+    const v = p[i], prev = p[(i-1+n)%n], next = p[(i+1)%n];
+    if (!(v.r > 0)){ out.push(v); continue; }
+    const L1 = len(sub(prev, v)), L2 = len(sub(next, v)), u1 = norm(sub(prev, v)), u2 = norm(sub(next, v));
+    const th = Math.acos(Math.max(-1, Math.min(1, dot(u1, u2))));
+    if (th < 1e-3 || th > Math.PI - 1e-3){ out.push(v); continue; }
+    const t = Math.min(v.r/Math.tan(th/2), L1/2, L2/2), r = t*Math.tan(th/2);
+    const p1 = add(v, mul(u1, t)), p2 = add(v, mul(u2, t)), c = add(v, mul(norm(add(u1, u2)), r/Math.sin(th/2)));
+    const a = sub(p1, c), b = sub(p2, c);
+    out.push(...arcPts(c, r, Math.atan2(a.y, a.x), Math.atan2(cross(a, b), dot(a, b))));
+  }
+  return clean(out);
+}
+function cornerRadius(part, i){
+  // The radius actually cut at point i (smaller than asked if the edges are too short).
+  const p = part.pts, n = p.length, v = p[i];
+  if (!(v.r > 0) || n < 3) return 0;
+  const u1 = norm(sub(p[(i-1+n)%n], v)), u2 = norm(sub(p[(i+1)%n], v)), th = Math.acos(Math.max(-1, Math.min(1, dot(u1, u2))));
+  if (th < 1e-3 || th > Math.PI - 1e-3) return 0;
+  return Math.min(v.r, Math.min(len(sub(p[(i-1+n)%n], v)), len(sub(p[(i+1)%n], v)))/2*Math.tan(th/2));
+}
+
+// Placed copy of a part: mirror (in X), rotate, then move so its bounding box starts at (inst.x, inst.y).
+function xf(part, inst){
+  const a = (inst.rot || 0)*Math.PI/180, c = Math.cos(a), s = Math.sin(a);
+  const T = p => { const x = inst.mir ? -p.x : p.x; return {x:x*c - p.y*s, y:x*s + p.y*c}; };
+  const o = shapePts(part).map(T), hs = part.holes.map(h => ({...T(h), d:h.d}));
+  const dx = inst.x - Math.min(...o.map(p => p.x)), dy = inst.y - Math.min(...o.map(p => p.y));
+  const outline = o.map(p => ({x:p.x+dx, y:p.y+dy}));
+  return {outline, holes:hs.map(h => ({x:h.x+dx, y:h.y+dy, d:h.d})), x:inst.x, y:inst.y,
+    x2:Math.max(...outline.map(p => p.x)), y2:Math.max(...outline.map(p => p.y))};
+}
+function partSize(part){ const g = xf(part, {x:0, y:0}); return {w:g.x2, h:g.y2}; }
+
+// Lowest free spot on a sheet, checked against the other parts' boxes plus the gap.
+function findSpot(part, others, mir, rots){
+  const s = set, m = s.margin, g = s.gap;
+  let best = null;
+  for (const rot of rots || (s.rotate ? [0, 90] : [0])){
+    const b = xf(part, {x:0, y:0, rot, mir}), w = b.x2, h = b.y2;
+    const xs = [m, ...others.map(o => o.x2 + g)], ys = [m, ...others.map(o => o.y2 + g)];
+    for (const y of ys) for (const x of xs){
+      if (x + w > s.sheetW - m + 1e-6 || y + h > s.sheetH - m + 1e-6) continue;
+      if (others.some(o => x < o.x2 + g - 1e-6 && x + w + g > o.x + 1e-6 && y < o.y2 + g - 1e-6 && y + h + g > o.y + 1e-6)) continue;
+      const score = (y + h)*1e5 + x;
+      if (!best || score < best.score) best = {x:r4(x), y:r4(y), rot, score};
+    }
+  }
+  return best;
+}
+function placeInst(part, mir, rots){
+  for (let sh=0; sh<100; sh++){
+    const others = doc.placed.filter(p => p.sheet === sh).map(p => xf(partById(p.partId), p));
+    const spot = findSpot(part, others, !!mir, rots);
+    if (spot){ doc.placed.push({id:doc.nextId++, partId:part.id, sheet:sh, x:spot.x, y:spot.y, rot:spot.rot, mir:!!mir}); return true; }
+    if (!others.length) return false;   // too big even for an empty sheet
+  }
+  return false;
+}
+// Keep the number of placed copies equal to each part's quantity, without moving the ones already placed.
+function sync(){
+  const ok = new Map(doc.parts.filter(placeable).map(p => [p.id, p]));
+  doc.placed = doc.placed.filter(p => ok.has(p.partId));
+  for (const part of ok.values()){
+    const mine = doc.placed.filter(p => p.partId === part.id);
+    if (mine.length > part.qty){ const drop = new Set(mine.slice(part.qty)); doc.placed = doc.placed.filter(p => !drop.has(p)); }
+    for (let k=mine.length; k<part.qty; k++) if (!placeInst(part)) break;
+  }
+  const used = [...new Set(doc.placed.map(p => p.sheet))].sort((a,b) => a-b);
+  const map = new Map(used.map((sh, i) => [sh, i]));
+  doc.placed.forEach(p => p.sheet = map.get(p.sheet));
+  sheetIdx = Math.min(sheetIdx, Math.max(0, used.length - 1));
+  if (selInst && !doc.placed.includes(selInst)) selInst = null;
+}
+function nest(){
+  snapshot();
+  const list = [];
+  for (const part of doc.parts.filter(placeable)) for (let k=0;k<part.qty;k++) list.push(part);
+  list.sort((a,b) => { const sa = partSize(a), sb = partSize(b); return sb.w*sb.h - sa.w*sa.h; });
+  doc.placed = [];
+  for (const part of list) placeInst(part);
+  sheetIdx = 0; selInst = null;
+  changed(); fitView();
+}
+const sheetCount = () => Math.max(1, ...doc.placed.map(p => p.sheet + 1));
+
+/* ---------- text parsing ---------- */
+const NUM = '(-?\\d*\\.?\\d+)';
+const RE_POLAR = new RegExp('^@\\s*'+NUM+'\\s*<\\s*'+NUM+'$');
+const RE_REL = new RegExp('^@\\s*'+NUM+'\\s*[,\\s]\\s*'+NUM+'$');
+const RE_ABS = new RegExp('^'+NUM+'\\s*[,\\s]\\s*'+NUM+'$');
+function parsePoint(line, cur){
+  let m;
+  if ((m = line.match(RE_POLAR))){ const L=+m[1], a=+m[2]*Math.PI/180; return rp({x:cur.x+L*Math.cos(a), y:cur.y+L*Math.sin(a)}); }
+  if ((m = line.match(RE_REL))) return rp({x:cur.x + +m[1], y:cur.y + +m[2]});
+  if ((m = line.match(RE_ABS))) return rp({x:+m[1], y:+m[2]});
+  throw new Error('Cannot read "' + line + '"');
+}
+function parsePts(text){
+  const out = []; let cur = {x:0, y:0};
+  for (const raw of text.split('\n')){
+    let l = raw.replace(/#.*/, '').trim(); if (!l) continue;
+    const m = l.match(/\s+r\s*(\d*\.?\d+)$/i);   // optional corner radius: "120, 40 r5"
+    if (m) l = l.slice(0, m.index).trim();
+    cur = parsePoint(l, cur);
+    out.push(m && +m[1] > 0 ? {...cur, r:+m[1]} : cur);
+  }
+  return clean(out);
+}
+function parseHoles(text){
+  const out = [];
+  for (const raw of text.split('\n')){
+    const l = raw.replace(/#.*/, '').trim(); if (!l) continue;
+    const n = l.split(/[,\s]+/).map(Number);
+    if (n.length !== 3 || n.some(isNaN) || n[2] <= 0) throw new Error('Hole line needs x, y, diameter: "' + l + '"');
+    out.push({x:n[0], y:n[1], d:n[2]});
+  }
+  return out;
+}
+const fmtN = v => String(r4(v));
+function writeText(){
+  const p = P(); if (!p) return;
+  $('ptsText').value = p.pts.map(q => fmtN(q.x) + ', ' + fmtN(q.y) + (q.r > 0 ? ' r' + fmtN(q.r) : '')).join('\n');
+  $('holesText').value = p.holes.map(h => fmtN(h.x) + ', ' + fmtN(h.y) + ', ' + fmtN(h.d)).join('\n');
+}
+
+/* ---------- settings, storage, undo ---------- */
+function readSet(){
+  const s = {};
+  for (const k in DEF_SET){
+    const el = $(k); if (!el) continue;
+    s[k] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? parseFloat(el.value) : el.value;
+  }
+  return s;
+}
+function writeSet(s){ for (const k in s){ const el = $(k); if (!el) continue; if (el.type === 'checkbox') el.checked = !!s[k]; else el.value = s[k]; } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify({doc, set, setVersion:SET_VERSION})); } catch(e) { /* storage unavailable */ } }
+function load(){
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY) || 'null');
+    if (d && d.doc && Array.isArray(d.doc.parts) && d.doc.parts.length){ doc = d.doc; set = d.setVersion === SET_VERSION ? {...DEF_SET, ...d.set} : {...DEF_SET}; curId = doc.parts[0].id; }
+  } catch(e) { /* ignore */ }
+}
+function snapshot(){ hist.push(JSON.stringify({doc, curId})); if (hist.length > 200) hist.shift(); }
+function undo(){
+  if (!hist.length) return;
+  const h = JSON.parse(hist.pop()); doc = h.doc; curId = partById(h.curId) ? h.curId : doc.parts[0].id;
+  selected = null; selInst = null; changed();
+}
+function changed(fromText){
+  if (!fromText) writeText();
+  sync();
+  if (!$('partsList').contains(document.activeElement)) renderParts(); else updateSizes();
+  if (!$('editPanel').contains(document.activeElement)) renderEditPanel();
+  save(); regen(); render();
+}
+
+/* ---------- parts list ---------- */
+function renderParts(){
+  const box = $('partsList'); box.innerHTML = '';
+  for (const p of doc.parts){
+    const row = document.createElement('div');
+    row.className = 'part' + (p.id === curId ? ' on' : '');
+    row.dataset.id = p.id;
+    const name = document.createElement('input'); name.type = 'text'; name.value = p.name; name.title = 'Part name';
+    name.addEventListener('input', () => { p.name = name.value; save(); regen(); render(); });
+    const qty = document.createElement('input'); qty.type = 'number'; qty.min = 0; qty.step = 1; qty.value = p.qty; qty.title = 'Quantity';
+    qty.addEventListener('change', () => { snapshot(); p.qty = Math.max(0, Math.round(+qty.value || 0)); qty.value = p.qty; changed(); });
+    const del = document.createElement('button'); del.textContent = '×'; del.title = 'Delete part';
+    del.addEventListener('click', e => { e.stopPropagation(); deletePart(p.id); });
+    const size = document.createElement('div'); size.className = 'size';
+    row.append(name, qty, del, size);
+    row.addEventListener('click', e => { if (e.target === row || e.target === size) selectPart(p.id, true); });
+    name.addEventListener('focus', () => selectPart(p.id, false));
+    box.appendChild(row);
+  }
+  updateSizes();
+}
+function updateSizes(){
+  for (const row of $('partsList').children){
+    const p = partById(+row.dataset.id); if (!p) continue;
+    row.classList.toggle('on', p.id === curId);
+    let t;
+    if (!placeable(p)) t = p.pts.length ? 'Shape not closed yet' : 'Empty: draw it';
+    else { const s = partSize(p), n = doc.placed.filter(q => q.partId === p.id).length; t = r4(s.w).toFixed(1) + ' × ' + r4(s.h).toFixed(1) + ' mm · ' + p.holes.length + ' holes' + (n < p.qty ? ' · ' + (p.qty - n) + ' do not fit' : ''); }
+    row.querySelector('.size').textContent = t;
+  }
+}
+function selectPart(id, toPart){
+  if (curId === id && !toPart) return;
+  curId = id; selected = null; writeText(); updateSizes(); renderEditPanel();
+  if (toPart) setTab('part'); else render();
+}
+function deletePart(id){
+  const p = partById(id);
+  if (p.pts.length && !confirm('Delete "' + p.name + '"?')) return;
+  snapshot();
+  doc.parts = doc.parts.filter(q => q.id !== id);
+  if (!doc.parts.length) doc.parts.push(newPartObj());
+  if (curId === id) curId = doc.parts[0].id;
+  renderParts(); changed();
+}
+function newPartObj(){ const id = doc.nextId++; return {id, name:'Part ' + (doc.parts.length + 1), qty:1, closed:false, pts:[], holes:[]}; }
+
+/* ---------- G-code ---------- */
+function fmt(v){
+  let t = (+v).toFixed(set.dec);
+  if (t.includes('.')) t = t.replace(/0+$/, '').replace(/\.$/, '');
+  return t === '-0' ? '0' : t;
+}
+function nnOrder(items, at, from){
+  const left = items.slice(), out = []; let cur = from;
+  while (left.length){
+    let bi = 0, bd = Infinity;
+    left.forEach((it, i) => { const d = len(sub(at(it), cur)); if (d < bd){ bd = d; bi = i; } });
+    const it = left.splice(bi, 1)[0]; out.push(it); cur = at(it);
+  }
+  return out;
+}
+
+function genSheet(si){
+  const s = set, warn = [], L = [];
+  const out = {gcode:'', warn, geo:[], bad:new Set(), stats:''};
+  const badSet = ['tool','step','feed','plunge','safe','sheetW','sheetH','thick'].filter(k => !(s[k] > 0));
+  if (badSet.length){ warn.push('Check settings: ' + badSet.join(', ') + ' must be above zero.'); return out; }
+  const r = s.tool/2, total = s.thick + s.over;
+  const passes = Math.max(1, Math.ceil(total/s.step - 1e-9));
+  const zs = Array.from({length:passes}, (_, i) => -total*(i+1)/passes);
+  const clr = Math.min(1, s.safe);
+  const useTabs = s.tabsOn && s.tabs > 0 && s.tabH > 0 && s.tabW > 0;
+  const tabTop = -total + s.tabH;
+
+  const geo = doc.placed.filter(p => p.sheet === si).map(p => { const part = partById(p.partId); return {inst:p, part, ...xf(part, p)}; });
+  out.geo = geo;
+
+  // Toolpaths: outside the line, climb = clockwise around the outside.
+  for (const g of geo){
+    let poly = clean(g.outline);
+    if (area(poly) < 0) poly = poly.slice().reverse();
+    let path = offsetPoly(poly, r, 6*Math.PI/180);
+    if (s.dir === 'climb') path.reverse();
+    let bi = 0, bl = 0;
+    for (let i=0;i<path.length;i++){ const l = len(sub(path[(i+1)%path.length], path[i])); if (l > bl){ bl = l; bi = i; } }
+    const mid = lerp(path[bi], path[(bi+1)%path.length], 0.5);
+    path = [mid, ...path.slice(bi+1), ...path.slice(0, bi+1), mid];
+    const cum = [0];
+    for (let i=1;i<path.length;i++) cum.push(cum[i-1] + len(sub(path[i], path[i-1])));
+    const Pl = cum[cum.length-1];
+    g.path = path; g.cum = cum; g.len = Pl; g.tabs = []; g.tabMarks = [];
+    if (useTabs){
+      const n = Math.round(s.tabs), tl = s.tabW + s.tool;
+      for (let k=0;k<n;k++){
+        const c = Pl*(k+0.5)/n;
+        g.tabs.push([Math.max(0, c - tl/2), Math.min(Pl, c + tl/2)]);
+        let i = 1; while (i < cum.length-1 && cum[i] < c) i++;
+        g.tabMarks.push(lerp(path[i-1], path[i], (c - cum[i-1])/((cum[i]-cum[i-1]) || 1)));
+      }
+    }
+  }
+
+  // Checks: off the sheet, or closer than one cutter width to another part.
+  let off = 0, close = 0;
+  for (const g of geo) if (g.x - r < -1e-6 || g.y - r < -1e-6 || g.x2 + r > s.sheetW + 1e-6 || g.y2 + r > s.sheetH + 1e-6){ out.bad.add(g.inst); off++; }
+  for (let i=0;i<geo.length;i++) for (let j=i+1;j<geo.length;j++){
+    const a = geo[i], b = geo[j], t = s.tool - 0.01;
+    if (a.x > b.x2 + t || b.x > a.x2 + t || a.y > b.y2 + t || b.y > a.y2 + t) continue;
+    if (polyDist(a.outline, b.outline) < t){ out.bad.add(a.inst); out.bad.add(b.inst); close++; }
+  }
+  if (off) warn.push(off + ' part(s) run off the sheet (red). Move them or press Nest.');
+  if (close) warn.push('Some parts are closer than the cutter width (red), so the cutter would damage them. Move them or press Nest.');
+  if (useTabs && tabTop >= 0) warn.push('Tab height is not less than the sheet thickness, so the parts will not be cut free.');
+  if (!geo.length) return out;
+
+  let lastF = null, cutLen = 0, plungeLen = 0;
+  const F = f => { if (f === lastF) return ''; lastF = f; return ' F' + f; };
+  const xy = p => ' X' + fmt(p.x) + ' Y' + fmt(p.y);
+  L.push('(' + s.name + ' - sheet ' + (si+1) + ' of ' + sheetCount() + ' - ' + new Date().toISOString().slice(0,16).replace('T',' ') + ')');
+  L.push('(Genmitsu 3030-PROVer Ultra, GRBL)');
+  L.push('(Sheet ' + s.sheetW + ' x ' + s.sheetH + ' x ' + s.thick + ' mm, ' + geo.length + ' parts)');
+  L.push('(Cutter D' + s.tool + ', depth ' + r4(total) + ' in ' + passes + (passes === 1 ? ' pass)' : ' passes)'));
+  L.push('(Zero: X0 Y0 front-left corner of sheet, Z0 top of sheet)');
+  L.push('G21 G90 G17 G94');
+  L.push('G0 Z' + fmt(s.safe));
+  L.push('M3 S10000');   // full speed: GRBL caps S at the machine's maximum ($30)
+  L.push('G4 P2');
+
+  // All holes first, while every part is still held by the sheet.
+  const holeArc = s.dir === 'climb' ? 'G3' : 'G2';
+  const holes = geo.flatMap(g => g.holes.map(h => ({...h, part:g.part})));
+  const smallParts = new Set();
+  let pos = {x:0, y:0};
+  for (const h of nnOrder(holes, h => h, pos)){
+    const R = +(h.d/2 - r).toFixed(s.dec);
+    if (h.d < s.tool - 0.01) smallParts.add(h.part.name);
+    L.push('G0' + xy(h)); L.push('G0 Z' + fmt(clr));
+    if (R <= 0.05){
+      for (const z of zs){ L.push('G1 Z' + fmt(z) + F(s.plunge)); L.push('G0 Z' + fmt(clr)); plungeLen += clr - z; }
+    } else {
+      const sp = {x:h.x + R, y:h.y};
+      L.push('G1' + xy(sp) + ' Z0' + F(s.plunge)); plungeLen += clr;
+      for (const z of zs) L.push(holeArc + xy(sp) + ' I' + fmt(-R) + ' J0 Z' + fmt(z) + F(s.feed));
+      L.push(holeArc + xy(sp) + ' I' + fmt(-R) + ' J0');
+      cutLen += 2*Math.PI*R*(passes + 1);
+    }
+    L.push('G0 Z' + fmt(s.safe));
+    pos = h;
+  }
+  if (smallParts.size) warn.push('Some holes in ' + [...smallParts].join(', ') + ' are smaller than the cutter; they will be cut at D' + s.tool + '.');
+
+  // Then the outlines, each to full depth.
+  for (const g of nnOrder(geo, g => g.path[0], pos)){
+    const path = g.path, cum = g.cum, bounds = g.tabs.flat();
+    L.push('(' + g.part.name + ')');
+    L.push('G0' + xy(path[0])); L.push('G0 Z' + fmt(clr));
+    let prevZ = clr;
+    for (const z of zs){
+      const tabbed = g.tabs.length && z < tabTop - 1e-6;
+      const zAt = sd => (tabbed && g.tabs.some(t => sd > t[0] && sd < t[1])) ? tabTop : z;
+      let curZ = zAt(1e-4);
+      L.push('G1 Z' + fmt(curZ) + F(s.plunge)); plungeLen += Math.max(0, prevZ - curZ);
+      const stepZ = sd => { const nz = zAt(sd + 1e-4); if (Math.abs(nz - curZ) > 1e-9){ L.push('G1 Z' + fmt(nz) + F(s.plunge)); plungeLen += Math.abs(nz - curZ); curZ = nz; } };
+      for (let i=1;i<path.length;i++){
+        const a = path[i-1], b = path[i], sA = cum[i-1], sB = cum[i];
+        if (tabbed) for (const sd of bounds.filter(v => v > sA + 1e-6 && v < sB - 1e-6).sort((p,q) => p-q)){
+          L.push('G1' + xy(lerp(a, b, (sd - sA)/(sB - sA))) + F(s.feed)); stepZ(sd);
+        }
+        L.push('G1' + xy(b) + F(s.feed));
+        if (tabbed && i < path.length-1) stepZ(sB);
+      }
+      cutLen += g.len; prevZ = curZ;
+    }
+    L.push('G0 Z' + fmt(s.safe));
+  }
+  L.push('M5'); L.push('G0 X0 Y0'); L.push('M30');
+  out.gcode = L.join('\n') + '\n';
+  const mins = cutLen/s.feed + plungeLen/s.plunge;
+  out.stats = geo.length + ' parts · ' + passes + (passes === 1 ? ' pass · ' : ' passes · ') + L.length + ' lines · about ' + (mins < 1 ? '<1' : Math.ceil(mins*1.15)) + ' min';
+  return out;
+}
+
+function regen(){
+  set = readSet();
+  res = genSheet(sheetIdx);
+  const notFit = doc.parts.filter(p => placeable(p) && doc.placed.filter(q => q.partId === p.id).length < p.qty);
+  if (notFit.length) res.warn.unshift(notFit.map(p => p.name).join(', ') + ': some copies do not fit on a sheet. Check the sheet size, margin and gap.');
+  const open = doc.parts.filter(p => p.qty > 0 && !placeable(p));
+  if (open.length) res.warn.unshift(open.map(p => p.name).join(', ') + ' has no closed shape yet, so it is not on the sheet.');
+  $('gcode').value = res.gcode;
+  $('warn').innerHTML = '';
+  for (const w of res.warn){ const d = document.createElement('div'); d.textContent = w; $('warn').appendChild(d); }
+  $('stats').textContent = res.gcode ? res.stats : 'Nothing to cut on this sheet.';
+  const n = sheetCount();
+  $('sheetLabel').textContent = 'Sheet ' + (sheetIdx + 1) + ' of ' + n;
+  $('prevSheet').disabled = sheetIdx === 0; $('nextSheet').disabled = sheetIdx >= n - 1;
+  $('downloadAll').classList.toggle('hidden', n < 2);
+  $('download').textContent = n > 1 ? 'Download sheet ' + (sheetIdx + 1) : 'Download G-code';
+  for (const id of ['rot90','mirror','dupe','remove','angle']) $(id).disabled = !selInst;
+  if (selInst && document.activeElement !== $('angle')) $('angle').value = selInst.rot || 0;
+}
+function download(si){
+  const r = genSheet(si);
+  if (!r.gcode) return flash('Nothing to cut on sheet ' + (si + 1) + '.');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([r.gcode], {type:'text/plain'}));
+  a.download = (set.name || 'job').replace(/[^\w.-]+/g, '_') + (sheetCount() > 1 ? '-sheet' + (si + 1) : '') + '.nc';
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- canvas ---------- */
+let W = 0, H = 0, dpr = 1;
+const view = () => views[tab];
+function resize(){
+  const r = cv.getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
+  W = r.width; H = r.height; cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  render();
+}
+const w2s = p => { const v = view(); return {x:v.ox + p.x*v.scale, y:v.oy - p.y*v.scale}; };
+const s2w = (sx, sy) => { const v = view(); return {x:(sx - v.ox)/v.scale, y:(v.oy - sy)/v.scale}; };
+
+function fitView(){
+  if (!W || !H) return;
+  let pts;
+  if (tab !== 'part') pts = [{x:0, y:0}, {x:set.sheetW, y:set.sheetH}];
+  else {
+    const p = P(); pts = [...p.pts];
+    for (const h of p.holes) pts.push({x:h.x-h.d/2, y:h.y-h.d/2}, {x:h.x+h.d/2, y:h.y+h.d/2});
+    if (!pts.length) pts.push({x:0, y:0}, {x:100, y:60});
+  }
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const x0 = Math.min(0, ...xs), x1 = Math.max(...xs), y0 = Math.min(0, ...ys), y1 = Math.max(...ys);
+  const v = view();
+  v.scale = Math.min(500, Math.max(0.05, Math.min(W/((x1-x0) || 1), H/((y1-y0) || 1)) * 0.82));
+  v.ox = W/2 - (x0+x1)/2*v.scale; v.oy = H/2 + (y0+y1)/2*v.scale;
+  render();
+}
+
+function render(){
+  if (!W || !H || !(view().scale > 0)) return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+  drawGrid();
+  if (tab === 'part') renderPart(); else if (tab === 'sheet') renderSheet(); else if (tab === 'machine') renderMachine(); else renderSim();
+}
+
+function tracePoly(pts){ pts.forEach((q, i) => { const s = w2s(q); i ? ctx.lineTo(s.x, s.y) : ctx.moveTo(s.x, s.y); }); }
+function traceHoles(holes){ const sc = view().scale; for (const h of holes){ const s = w2s(h); ctx.moveTo(s.x + h.d/2*sc, s.y); ctx.arc(s.x, s.y, h.d/2*sc, 0, Math.PI*2); } }
+
+function renderPart(){
+  const part = P(), p = part.pts, sc = view().scale;
+  if (p.length){
+    const shape = shapePts(part);
+    if (shape !== p){   // radiused: show the sharp construction corners faintly
+      ctx.beginPath(); tracePoly(p); ctx.closePath();
+      ctx.setLineDash([3,3]); ctx.strokeStyle = 'rgba(29,36,51,.3)'; ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.beginPath(); tracePoly(shape);
+    if (part.closed){ ctx.closePath(); traceHoles(part.holes); ctx.fillStyle = 'rgba(31,111,235,.08)'; ctx.fill('evenodd'); }
+    ctx.strokeStyle = '#1d2433'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+  if (selected && selected.type === 'edge' && p.length > 1){
+    const a = w2s(p[selected.i]), b = w2s(p[(selected.i+1)%p.length]);
+    ctx.strokeStyle = '#1f6feb'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  part.holes.forEach((h, i) => {
+    const s = w2s(h), on = isSel('hole', i);
+    ctx.beginPath(); ctx.arc(s.x, s.y, h.d/2*sc, 0, Math.PI*2);
+    ctx.strokeStyle = on ? '#1f6feb' : '#1d2433'; ctx.lineWidth = on ? 2.5 : 1.5; ctx.stroke();
+    cross2(s, 4, '#1d2433');
+  });
+  dimRects = [];
+  if (set.dims && p.length > 1){
+    ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const n = part.closed ? p.length : p.length - 1, ccw = area(p) >= 0;
+    for (let i=0;i<n;i++){
+      const a = p[i], b = p[(i+1)%p.length], l = len(sub(b,a));
+      if (l*sc < 30) continue;
+      const m = w2s(lerp(a,b,.5)), d = norm(sub(b,a)), off = ccw ? {x:d.y, y:d.x} : {x:-d.y, y:-d.x};
+      const tx = m.x + off.x*12, ty = m.y + off.y*12, label = String(Math.round(l*100)/100);
+      const w = ctx.measureText(label).width + 6;
+      const on = isSel('edge', i);
+      ctx.fillStyle = on ? '#1f6feb' : 'rgba(255,255,255,.85)'; ctx.fillRect(tx - w/2, ty - 7, w, 14);
+      ctx.fillStyle = on ? '#fff' : '#475467'; ctx.fillText(label, tx, ty);
+      dimRects.push({i, x:tx - w/2, y:ty - 7, w, h:14});
+    }
+  }
+  p.forEach((q, i) => {
+    const s = w2s(q);
+    ctx.fillStyle = isSel('pt', i) ? '#1f6feb' : (i === 0 && !part.closed ? '#12a150' : '#fff');
+    ctx.strokeStyle = '#1d2433'; ctx.lineWidth = 1;
+    ctx.fillRect(s.x-3.5, s.y-3.5, 7, 7); ctx.strokeRect(s.x-3.5, s.y-3.5, 7, 7);
+  });
+  if (mode === 'draw' && !part.closed && p.length && cursor){
+    const a = w2s(p[p.length-1]), b = w2s(cursor);
+    ctx.setLineDash([5,4]); ctx.strokeStyle = '#1f6feb'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
+    const v = sub(cursor, p[p.length-1]);
+    const label = len(v).toFixed(2) + ' @ ' + (Math.round(Math.atan2(v.y, v.x)*1800/Math.PI)/10) + '°';
+    ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    const w = ctx.measureText(label).width + 8;
+    ctx.fillStyle = 'rgba(31,111,235,.9)'; ctx.fillRect(b.x + 10, b.y - 24, w, 18);
+    ctx.fillStyle = '#fff'; ctx.fillText(label, b.x + 14, b.y - 9);
+  }
+  if (cursor && (mode === 'draw' || mode === 'hole')){
+    const s = w2s(cursor);
+    if (mode === 'hole'){ ctx.beginPath(); ctx.arc(s.x, s.y, set.holeD/2*sc, 0, Math.PI*2); ctx.strokeStyle = 'rgba(31,111,235,.7)'; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]); }
+    cross2(s, 6, '#1f6feb');
+  }
+  if (mode === 'draw' || mode === 'hole' || (drag && drag.type !== 'pan')) drawGuides();
+}
+
+function renderSheet(){
+  const a = w2s({x:0, y:0}), b = w2s({x:set.sheetW, y:set.sheetH});
+  ctx.fillStyle = '#e9edf2'; ctx.fillRect(a.x, b.y, b.x - a.x, a.y - b.y);
+  ctx.strokeStyle = '#98a2b3'; ctx.lineWidth = 1.5; ctx.strokeRect(a.x, b.y, b.x - a.x, a.y - b.y);
+  const m = set.margin || 0;
+  if (m > 0){
+    const c = w2s({x:m, y:m}), d = w2s({x:set.sheetW - m, y:set.sheetH - m});
+    ctx.setLineDash([4,4]); ctx.strokeStyle = '#c0c6d0'; ctx.lineWidth = 1; ctx.strokeRect(c.x, d.y, d.x - c.x, c.y - d.y); ctx.setLineDash([]);
+  }
+  ctx.fillStyle = '#12a150'; ctx.beginPath(); ctx.arc(a.x, a.y, 4, 0, Math.PI*2); ctx.fill();
+  ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('X0 Y0', a.x + 6, a.y + 4);
+
+  for (const g of res.geo){
+    const bad = res.bad.has(g.inst), sel = g.inst === selInst;
+    ctx.beginPath(); tracePoly(g.outline); ctx.closePath(); traceHoles(g.holes);
+    ctx.fillStyle = bad ? 'rgba(217,45,32,.25)' : sel ? 'rgba(31,111,235,.35)' : 'rgba(255,255,255,.95)';
+    ctx.fill('evenodd');
+    ctx.strokeStyle = bad ? '#d92d20' : sel ? '#1f6feb' : '#1d2433'; ctx.lineWidth = sel ? 2 : 1.25; ctx.stroke();
+    if (g.path){
+      ctx.beginPath(); tracePoly(g.path); ctx.strokeStyle = 'rgba(229,83,26,.8)'; ctx.lineWidth = 1; ctx.stroke();
+      for (const t of g.tabMarks){ const s = w2s(t); ctx.fillStyle = '#e5531a'; ctx.fillRect(s.x-3, s.y-3, 6, 6); }
+    }
+    const c = w2s({x:(g.x + g.x2)/2, y:(g.y + g.y2)/2}), label = g.part.name + (g.inst.mir ? ' (M)' : '');
+    ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (ctx.measureText(label).width < (g.x2 - g.x)*view().scale - 6){ ctx.fillStyle = '#475467'; ctx.fillText(label, c.x, c.y); }
+  }
+}
+function isSel(type, i){ return selected && selected.type === type && selected.i === i; }
+function cross2(s, r, col){ ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(s.x-r, s.y); ctx.lineTo(s.x+r, s.y); ctx.moveTo(s.x, s.y-r); ctx.lineTo(s.x, s.y+r); ctx.stroke(); }
+function drawGrid(){
+  const sc = view().scale, want = 10/sc, snap = parseFloat(set.snap) || 0;
+  const steps = [0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+  let g = steps.find(v => v >= want && v >= snap) || 1000;
+  while (Math.max(W, H)/(g*sc) > 400) g *= 10;
+  const G = g*10, a = s2w(0, H), b = s2w(W, 0);
+  const lines = (step, col) => {
+    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = Math.ceil(a.x/step)*step; x <= b.x; x += step){ const s = Math.round(w2s({x, y:0}).x) + .5; ctx.moveTo(s, 0); ctx.lineTo(s, H); }
+    for (let y = Math.ceil(a.y/step)*step; y <= b.y; y += step){ const s = Math.round(w2s({x:0, y}).y) + .5; ctx.moveTo(0, s); ctx.lineTo(W, s); }
+    ctx.stroke();
+  };
+  lines(g, '#f0f2f5'); lines(G, '#dde1e7');
+  if (tab === 'part'){
+    const o = w2s({x:0, y:0});
+    ctx.strokeStyle = 'rgba(31,111,235,.45)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(o.x, 0); ctx.lineTo(o.x, H); ctx.moveTo(0, o.y); ctx.lineTo(W, o.y); ctx.stroke();
+  }
+  ctx.font = '10px system-ui, sans-serif'; ctx.fillStyle = '#98a2b3'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  for (let x = Math.ceil(a.x/G)*G; x <= b.x; x += G) ctx.fillText(String(r4(x)), w2s({x, y:0}).x + 3, 3);
+  for (let y = Math.ceil(a.y/G)*G; y <= b.y; y += G) ctx.fillText(String(r4(y)), 3, w2s({x:0, y}).y + 3);
+}
+
+/* ---------- part drawing ---------- */
+function snapPt(sx, sy, e, skip){
+  const part = P();
+  for (let i=0;i<part.pts.length;i++){
+    if (skip && skip.type === 'pt' && skip.i === i) continue;
+    const s = w2s(part.pts[i]);
+    if (Math.hypot(s.x - sx, s.y - sy) < 8) return {...part.pts[i]};
+  }
+  const raw = s2w(sx, sy), g = parseFloat(set.snap) || 0;
+  let p = g > 0 ? {x:Math.round(raw.x/g)*g, y:Math.round(raw.y/g)*g} : {...raw};
+  // Soft locks, each axis on its own: shape centre, edge midpoints, then other points and hole centres.
+  guides = {x:null, y:null};
+  if (set.guides && !(e && e.altKey)){
+    const cand = guideCandidates(skip), tol = 8/view().scale;
+    for (const ax of ['x', 'y']){
+      let best = null;
+      for (const c of cand){
+        const d = Math.abs(c[ax] - raw[ax]) - (c.kind === 'centre' ? 3/view().scale : 0);
+        if (Math.abs(c[ax] - raw[ax]) < tol && (!best || d < best.d)) best = {d, v:c[ax], kind:c.kind};
+      }
+      if (best){ p[ax] = best.v; guides[ax] = best; }
+    }
+  }
+  const last = part.pts[part.pts.length-1];
+  if (e && e.shiftKey && mode === 'draw' && last && !part.closed){
+    if (Math.abs(p.x - last.x) > Math.abs(p.y - last.y)){ p.y = last.y; guides.y = null; } else { p.x = last.x; guides.x = null; }
+  }
+  return rp(p);
+}
+function guideCandidates(skip){
+  const part = P(), p = part.pts, n = p.length, out = [];
+  const skipPt = skip && skip.type === 'pt' ? skip.i : -1, skipHole = skip && skip.type === 'hole' ? skip.i : -1;
+  const pts = p.filter((_, i) => i !== skipPt);
+  if (pts.length >= 2 && skipPt < 0){
+    const xs = pts.map(q => q.x), ys = pts.map(q => q.y);
+    out.push({x:(Math.min(...xs) + Math.max(...xs))/2, y:(Math.min(...ys) + Math.max(...ys))/2, kind:'centre'});
+  }
+  const ne = part.closed ? n : n - 1;
+  for (let i=0;i<ne;i++){
+    const j = (i+1)%n;
+    if (i === skipPt || j === skipPt) continue;
+    out.push({...lerp(p[i], p[j], .5), kind:'middle'});
+  }
+  pts.forEach(q => out.push({x:q.x, y:q.y, kind:'in line'}));
+  part.holes.forEach((h, i) => { if (i !== skipHole) out.push({x:h.x, y:h.y, kind:'in line'}); });
+  return out;
+}
+function drawGuides(){
+  if (!cursor || tab !== 'part') return;
+  const c = w2s(cursor);
+  ctx.save(); ctx.setLineDash([6,4]); ctx.strokeStyle = '#d6409f'; ctx.lineWidth = 1;
+  ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = '#d6409f'; ctx.textBaseline = 'bottom';
+  if (guides.x){ ctx.beginPath(); ctx.moveTo(c.x + .5, 0); ctx.lineTo(c.x + .5, H); ctx.stroke(); ctx.textAlign = 'left'; ctx.fillText(guides.x.kind + ' X', c.x + 5, c.y - 30); }
+  if (guides.y){ ctx.beginPath(); ctx.moveTo(0, c.y + .5); ctx.lineTo(W, c.y + .5); ctx.stroke(); ctx.textAlign = 'right'; ctx.fillText(guides.y.kind + ' Y', c.x - 10, c.y - 4); }
+  ctx.restore();
+}
+function hitTest(sx, sy){
+  const part = P();
+  for (let i=0;i<part.pts.length;i++){ const s = w2s(part.pts[i]); if (Math.hypot(s.x-sx, s.y-sy) < 8) return {type:'pt', i}; }
+  for (let i=0;i<part.holes.length;i++){
+    const h = part.holes[i], s = w2s(h), dd = Math.hypot(s.x-sx, s.y-sy);
+    if (dd < 8 || Math.abs(dd - h.d/2*view().scale) < 6) return {type:'hole', i};
+  }
+  return null;
+}
+function edgeHit(sx, sy){
+  const part = P(), n = part.closed ? part.pts.length : part.pts.length - 1;
+  for (let i=0;i<n;i++){
+    const a = w2s(part.pts[i]), b = w2s(part.pts[(i+1)%part.pts.length]);
+    if (ptSeg({x:sx, y:sy}, a, b) < 6) return i;
+  }
+  return -1;
+}
+function dimHit(sx, sy){
+  const r = dimRects.find(d => sx >= d.x - 2 && sx <= d.x + d.w + 2 && sy >= d.y - 2 && sy <= d.y + d.h + 2);
+  return r ? r.i : -1;
+}
+
+/* ---------- numeric edits: edge length / angle, corner angle ---------- */
+const deg = r => r*180/Math.PI, rad = d => d*Math.PI/180;
+const normDeg = a => { a = ((a % 360) + 360) % 360; return a > 180 + 1e-9 ? a - 360 : a; };
+function edgeEnds(i){ const p = P().pts; return [p[i], p[(i+1)%p.length]]; }
+function edgeAngle(i){ const [a, b] = edgeEnds(i); return normDeg(deg(Math.atan2(b.y - a.y, b.x - a.x))); }
+
+// New length. Stretch: everything past the middle of the edge (points and holes) moves with the end,
+// so the other edges keep their lengths. Otherwise only the end point moves.
+function setEdgeLen(i, L){
+  const part = P(), [a, b] = edgeEnds(i), d = norm(sub(b, a)), delta = L - len(sub(b, a));
+  const j = (i+1)%part.pts.length;
+  if (!stretch){ part.pts[j] = {...part.pts[j], ...rp(add(a, mul(d, L)))}; return; }
+  const mid = len(sub(b, a))/2 + 1e-6;
+  const move = q => dot(sub(q, a), d) > mid ? {...q, ...rp(add(q, mul(d, delta)))} : q;
+  part.pts = part.pts.map(move);
+  part.holes = part.holes.map(h => ({...move(h), d:h.d}));
+}
+// New direction for edge i, turning about its start point. The end point slides along the next edge's line,
+// so that edge keeps its direction (it gets longer or shorter instead). With no next edge, the length is kept.
+function setEdgeDir(i, angleDeg){
+  const part = P(), p = part.pts, n = p.length, j = (i+1)%n, k = (j+1)%n;
+  const a = p[i], b = p[j], d = {x:Math.cos(rad(angleDeg)), y:Math.sin(rad(angleDeg))};
+  let nb = add(a, mul(d, len(sub(b, a))));
+  if ((part.closed || j < n-1) && k !== i){
+    const e = sub(p[k], b), den = cross(d, e);
+    if (Math.abs(den) > 1e-9){ const t = cross(sub(b, a), e)/den; if (t > 1e-6) nb = add(a, mul(d, t)); }
+  }
+  p[j] = {...p[j], ...rp(nb)};
+}
+// Inside angle at point i (between the edge coming in and the edge going out). Null at the ends of an open shape.
+function cornerInfo(i){
+  const part = P(), p = part.pts, n = p.length;
+  if (n < 3 || (!part.closed && (i === 0 || i === n-1))) return null;
+  const a = norm(sub(p[i], p[(i-1+n)%n])), b = norm(sub(p[(i+1)%n], p[i]));
+  const turn = deg(Math.atan2(cross(a, b), dot(a, b)));
+  const side = part.closed ? (area(p) >= 0 ? 1 : -1) : (Math.sign(turn) || 1);
+  return {angle:180 - side*turn, side, inAng:deg(Math.atan2(a.y, a.x))};
+}
+function setCorner(i, angle){
+  const c = cornerInfo(i); if (!c) return;
+  setEdgeDir(i, normDeg(c.inAng + c.side*(180 - angle)));
+}
+
+function renderEditPanel(){
+  const box = $('editPanel'), part = P(), sel = selected;
+  const valid = sel && (sel.type === 'hole' ? part.holes[sel.i] : part.pts[sel.i]);
+  if (tab !== 'part' || !valid || (sel.type === 'edge' && part.pts.length < 2)){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden'); box.innerHTML = '';
+  const title = t => { const h = document.createElement('div'); h.className = 'ep-title'; h.textContent = t; box.appendChild(h); };
+  const note = t => { const h = document.createElement('p'); h.className = 'note'; h.textContent = t; box.appendChild(h); };
+  const field = (key, label, value, apply, unit) => {
+    const l = document.createElement('label'); l.textContent = label;
+    const inp = document.createElement('input'); inp.type = 'number'; inp.step = 'any'; inp.value = r4(value); inp.dataset.k = key;
+    inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value);
+      if (isNaN(v)) return;
+      snapshot();
+      if (apply(v) === false){ hist.pop(); flash('That value cannot be used.'); }
+      changed(); renderEditPanel();
+      const again = box.querySelector('[data-k="' + key + '"]'); if (again){ again.focus(); again.select(); }
+    });
+    const wrap = document.createElement('span'); wrap.append(inp, document.createTextNode(' ' + (unit || 'mm')));
+    l.appendChild(wrap); box.appendChild(l);
+  };
+  if (sel.type === 'edge'){
+    const [a, b] = edgeEnds(sel.i);
+    title('Edge ' + (sel.i + 1));
+    field('len', 'Length', len(sub(b, a)), v => v > 0 ? setEdgeLen(sel.i, v) : false);
+    field('ang', 'Angle', edgeAngle(sel.i), v => setEdgeDir(sel.i, v), '°');
+    const l = document.createElement('label'); l.className = 'check';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = stretch;
+    cb.addEventListener('change', () => { stretch = cb.checked; });
+    l.append(cb, document.createTextNode(' Stretch the part')); box.appendChild(l);
+    note('Angle: 0° = right, 90° = up. Stretch moves the far side of the part with the edge; off moves only the end point.');
+  } else if (sel.type === 'pt'){
+    const q = part.pts[sel.i], c = cornerInfo(sel.i);
+    title('Point ' + (sel.i + 1));
+    field('x', 'X', q.x, v => { q.x = v; });
+    field('y', 'Y', q.y, v => { q.y = v; });
+    if (c){
+      field('corner', 'Corner angle', c.angle, v => v > 0 && v < 360 ? setCorner(sel.i, v) : false, '°');
+      field('radius', 'Corner radius', q.r || 0, v => { if (v < 0) return false; if (v > 0) q.r = v; else delete q.r; });
+      const btn = document.createElement('button'); btn.textContent = 'Use this radius on all corners';
+      btn.style.margin = '4px 0';
+      btn.addEventListener('click', () => {
+        snapshot(); const r = q.r || 0;
+        part.pts.forEach(pt => { if (r > 0) pt.r = r; else delete pt.r; });
+        changed(); renderEditPanel();
+      });
+      box.appendChild(btn);
+      const cut = cornerRadius(part, sel.i);
+      note('Inside angle: the next edge turns and the edge after it keeps its line. Radius 0 = sharp.' +
+        (q.r > 0 && cut < q.r - 1e-3 ? ' The edges are too short for this radius, so ' + r4(cut) + ' mm is cut.' : ''));
+    }
+  } else {
+    const h = part.holes[sel.i];
+    title('Hole ' + (sel.i + 1));
+    field('x', 'X', h.x, v => { h.x = v; });
+    field('y', 'Y', h.y, v => { h.y = v; });
+    field('d', 'Diameter', h.d, v => v > 0 ? (h.d = v, undefined) : false);
+  }
+}
+
+function addPoint(p){
+  const part = P();
+  if (part.closed) return flash('This shape is closed. Use Clear to start again, or Edit to change it.');
+  if (part.pts.length >= 3 && len(sub(p, part.pts[0])) < 1e-6) return closeShape();
+  if (part.pts.length && len(sub(p, part.pts[part.pts.length-1])) < 1e-6) return;
+  snapshot(); part.pts.push({x:p.x, y:p.y}); changed();
+}
+function closeShape(){
+  const part = P();
+  if (part.closed || part.pts.length < 3) return;
+  snapshot(); part.closed = true;
+  if (selfCrosses(part.pts)) flash('Closed, but the outline crosses itself. Check the point order.');
+  changed(); setMode('edit');
+}
+
+/* ---------- sheet editing ---------- */
+function hitInst(sx, sy){
+  const w = s2w(sx, sy);
+  for (let i=res.geo.length-1;i>=0;i--){ const g = res.geo[i]; if (inPoly(w, g.outline)) return g.inst; }
+  for (let i=res.geo.length-1;i>=0;i--){ const g = res.geo[i]; if (w.x >= g.x && w.x <= g.x2 && w.y >= g.y && w.y <= g.y2) return g.inst; }
+  return null;
+}
+// Change rotation or mirror while keeping the part's centre where it is.
+function turnInst(inst, rot, mir){
+  const part = partById(inst.partId), g = xf(part, inst), cx = (g.x + g.x2)/2, cy = (g.y + g.y2)/2;
+  inst.rot = ((rot % 360) + 360) % 360; inst.mir = mir;
+  const n = xf(part, {...inst, x:0, y:0});
+  inst.x = r4(cx - n.x2/2); inst.y = r4(cy - n.y2/2);
+}
+function rotateSel(deg){ if (!selInst) return; snapshot(); turnInst(selInst, (selInst.rot || 0) + deg, selInst.mir); changed(); }
+function mirrorSel(){ if (!selInst) return; snapshot(); turnInst(selInst, selInst.rot || 0, !selInst.mir); changed(); }
+function removeSel(){
+  if (!selInst) return;
+  snapshot();
+  const part = partById(selInst.partId);
+  doc.placed = doc.placed.filter(p => p !== selInst); part.qty = Math.max(0, part.qty - 1); selInst = null;
+  renderParts(); changed();
+}
+function dupeSel(){
+  if (!selInst) return;
+  snapshot();
+  const part = partById(selInst.partId); part.qty++;
+  const before = doc.placed.length;
+  if (placeInst(part, selInst.mir, [selInst.rot || 0])){ selInst = doc.placed[before]; sheetIdx = selInst.sheet; }
+  renderParts(); changed();
+}
+function nudge(dx, dy){ if (!selInst) return; snapshot(); selInst.x = r4(selInst.x + dx); selInst.y = r4(selInst.y + dy); changed(); }
+
+/* ---------- simulator ---------- */
+// Replays the G-code text itself (not the drawing), so what you see is what the machine is sent.
+const RAPID = 1500;   // mm/min, rough G0 speed for the time estimate
+let sim = {segs:[], total:0, t:0, playing:false, last:0};
+
+function parseGcode(text){
+  const segs = []; let x = 0, y = 0, z = set.safe, f = 100, motion = 0, t = 0;
+  const push = (nx, ny, nz, rapid, line) => {
+    const d = Math.hypot(nx - x, ny - y, nz - z);
+    if (d < 1e-9) return;
+    const dt = d/(rapid ? RAPID : f);
+    segs.push({x0:x, y0:y, z0:z, x1:nx, y1:ny, z1:nz, rapid, t0:t, t1:t + dt, line});
+    t += dt; x = nx; y = ny; z = nz;
+  };
+  text.split('\n').forEach((raw, li) => {
+    const l = raw.replace(/\(.*?\)/g, '').replace(/;.*/, '').toUpperCase();
+    const w = {}; let m;
+    const re = /([A-Z])\s*(-?\d*\.?\d+)/g;
+    while ((m = re.exec(l))){
+      if (m[1] === 'G'){ const g = +m[2]; if (g <= 3) motion = g; else if (g === 4) w.dwell = true; }
+      else w[m[1]] = +m[2];
+    }
+    if (w.F) f = w.F;
+    if (w.dwell){ t += (w.P || 0)/60; return; }
+    if (w.X === undefined && w.Y === undefined && w.Z === undefined) return;
+    const nx = w.X ?? x, ny = w.Y ?? y, nz = w.Z ?? z;
+    if (motion <= 1) return push(nx, ny, nz, motion === 0, li + 1);
+    const c = {x:x + (w.I || 0), y:y + (w.J || 0)}, R = Math.hypot(x - c.x, y - c.y);
+    const a0 = Math.atan2(y - c.y, x - c.x); let a1 = Math.atan2(ny - c.y, nx - c.x);
+    let sweep = a1 - a0;
+    if (motion === 3){ while (sweep <= 1e-9) sweep += 2*Math.PI; } else { while (sweep >= -1e-9) sweep -= 2*Math.PI; }
+    const n = Math.max(4, Math.ceil(Math.abs(sweep)/rad(5))), z0 = z;
+    for (let k=1;k<=n;k++){
+      const a = a0 + sweep*k/n;
+      push(k === n ? nx : c.x + R*Math.cos(a), k === n ? ny : c.y + R*Math.sin(a), z0 + (nz - z0)*k/n, false, li + 1);
+    }
+  });
+  return {segs, total:t};
+}
+function simLoad(){
+  const p = parseGcode(res.gcode || '');
+  sim.segs = p.segs; sim.total = p.total; sim.t = 0; simUi();
+}
+function simAt(t){
+  const s = sim.segs; let lo = 0, hi = s.length - 1;
+  while (lo < hi){ const mid = (lo + hi) >> 1; if (s[mid].t1 < t) lo = mid + 1; else hi = mid; }
+  return lo;
+}
+function simPos(){
+  if (!sim.segs.length) return null;
+  const i = simAt(sim.t), s = sim.segs[i], u = Math.max(0, Math.min(1, (sim.t - s.t0)/((s.t1 - s.t0) || 1)));
+  return {i, s, u, x:s.x0 + (s.x1 - s.x0)*u, y:s.y0 + (s.y1 - s.y0)*u, z:s.z0 + (s.z1 - s.z0)*u};
+}
+const mmss = m => { const s = Math.round(m*60); return Math.floor(s/60) + ':' + String(s % 60).padStart(2, '0'); };
+function simUi(){
+  const p = simPos();
+  $('simPlay').textContent = sim.playing ? 'Pause' : 'Play';
+  if (document.activeElement !== $('simScrub')) $('simScrub').value = sim.total ? Math.round(sim.t/sim.total*1000) : 0;
+  $('simInfo').textContent = p
+    ? 'Sheet ' + (sheetIdx + 1) + ' · line ' + p.s.line + ' · X' + p.x.toFixed(1) + ' Y' + p.y.toFixed(1) + ' Z' + p.z.toFixed(2) + ' · ' + mmss(sim.t) + ' / ' + mmss(sim.total)
+    : 'Nothing to simulate on this sheet.';
+  render();
+}
+function simFrame(now){
+  if (!sim.playing) return;
+  sim.t = Math.min(sim.total, sim.t + (now - sim.last)/60000*(+$('simSpeed').value));
+  sim.last = now;
+  if (sim.t >= sim.total) sim.playing = false;
+  simUi();
+  if (sim.playing) requestAnimationFrame(simFrame);
+}
+function simToggle(){
+  if (!sim.segs.length) return;
+  if (sim.playing) return simStop();
+  if (sim.t >= sim.total) sim.t = 0;
+  sim.playing = true; sim.last = performance.now(); simUi(); requestAnimationFrame(simFrame);
+}
+function simStop(){ sim.playing = false; if (tab === 'sim') simUi(); }
+
+// live = the machine's reported position (Machine tab): the cutter and Z gauge show that instead of the playback point.
+function renderSim(live){
+  // Sheet and part outlines
+  const a = w2s({x:0, y:0}), b = w2s({x:set.sheetW, y:set.sheetH}), sc = view().scale;
+  ctx.fillStyle = '#d9dde3'; ctx.fillRect(a.x, b.y, b.x - a.x, a.y - b.y);
+  ctx.strokeStyle = '#98a2b3'; ctx.lineWidth = 1.5; ctx.strokeRect(a.x, b.y, b.x - a.x, a.y - b.y);
+  for (const g of res.geo){ ctx.beginPath(); tracePoly(g.outline); ctx.closePath(); traceHoles(g.holes); ctx.strokeStyle = 'rgba(29,36,51,.35)'; ctx.lineWidth = 1; ctx.stroke(); }
+  const thick = set.thick || 1;
+  const p = sim.segs.length ? simPos() : null;
+  if (p) drawCutSoFar(p, sc, thick);
+  const tool = live !== undefined ? live : p;
+  if (tool) drawCutter(tool, sc, thick, live !== undefined ? 46 : W - 46);
+}
+function drawCutSoFar(p, sc, thick){
+  // Cut so far: a band the width of the cutter, darker the deeper it goes (tabs stay lighter).
+  const cols = ['#efd5ae', '#dfb07a', '#c98546', '#a8602a', '#6e3a14'];
+  const colFor = z => cols[Math.min(4, Math.floor(Math.max(0, -z)/thick*4.999))];
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1, set.tool*sc);
+  let col = null; ctx.beginPath();
+  const segTo = (s, x1, y1, z1) => {
+    if (s.rapid || (s.z0 >= 0 && z1 >= 0)) return;
+    const c = colFor(Math.max(s.z0, z1) >= 0 ? Math.min(s.z0, z1) : (s.z0 + z1)/2);
+    if (c !== col){ if (col) ctx.stroke(); ctx.beginPath(); ctx.strokeStyle = col = c; }
+    const u = w2s({x:s.x0, y:s.y0}), v = w2s({x:x1, y:y1}); ctx.moveTo(u.x, u.y); ctx.lineTo(v.x, v.y);
+  };
+  for (let i=0;i<p.i;i++){ const s = sim.segs[i]; segTo(s, s.x1, s.y1, s.z1); }
+  segTo(p.s, p.x, p.y, p.z);
+  if (col) ctx.stroke();
+  // Rapids so far
+  ctx.lineWidth = 1; ctx.setLineDash([3,4]); ctx.strokeStyle = 'rgba(31,111,235,.45)'; ctx.beginPath();
+  for (let i=0;i<=p.i;i++){
+    const s = sim.segs[i]; if (!s.rapid || (s.x0 === s.x1 && s.y0 === s.y1)) continue;
+    const u = w2s({x:s.x0, y:s.y0}), v = i === p.i ? w2s(p) : w2s({x:s.x1, y:s.y1}); ctx.moveTo(u.x, u.y); ctx.lineTo(v.x, v.y);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+function drawCutter(p, sc, thick, gx){
+  const t = w2s(p);
+  ctx.beginPath(); ctx.arc(t.x, t.y, Math.max(3, set.tool/2*sc), 0, Math.PI*2);
+  ctx.fillStyle = p.z < 0 ? 'rgba(229,83,26,.55)' : 'rgba(31,111,235,.25)'; ctx.fill();
+  ctx.strokeStyle = p.z < 0 ? '#e5531a' : '#1f6feb'; ctx.lineWidth = 1.5; ctx.stroke();
+  cross2(t, 8, ctx.strokeStyle);
+  // Z gauge (clamped so a cutter far above the sheet still shows at the top)
+  const gy = 16, gh = 150, zTop = Math.max(set.safe, 1), zBot = -(thick + set.over) - 0.5;
+  const zy = z => gy + (zTop - Math.max(zBot, Math.min(zTop, z)))/(zTop - zBot)*gh;
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(gx - 26, gy - 10, 66, gh + 34);
+  ctx.fillStyle = '#c98546'; ctx.fillRect(gx, zy(0), 16, zy(-thick) - zy(0));
+  ctx.strokeStyle = '#98a2b3'; ctx.lineWidth = 1; ctx.strokeRect(gx, gy, 16, gh);
+  ctx.fillStyle = p.z < 0 ? '#e5531a' : '#1f6feb'; ctx.fillRect(gx - 4, zy(p.z) - 1.5, 24, 3);
+  ctx.font = '10px system-ui, sans-serif'; ctx.fillStyle = '#475467'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('0', gx - 4, zy(0)); ctx.fillText(String(-thick), gx - 4, zy(-thick));
+  ctx.textAlign = 'center'; ctx.fillText('Z ' + p.z.toFixed(2), gx + 8, gy + gh + 14);
+}
+$('simPlay').addEventListener('click', simToggle);
+$('simRestart').addEventListener('click', () => { sim.t = 0; simUi(); });
+$('simScrub').addEventListener('input', () => { sim.t = sim.total*$('simScrub').value/1000; simUi(); });
+
+/* ---------- simulated machine: a pretend GRBL 1.1 controller for practice and for testing the sender ---------- */
+// It looks like a serial port to the sender (open/close/readable/writable) and answers the way GRBL does:
+// a 128-byte receive buffer, a 15-block planner, 'ok' when a line is planned, moves run at their feed rate,
+// feed hold / resume / soft reset, jog and jog cancel, G10 work offsets, alarms and error codes.
+function makeSimMachine(){
+  const enc = new TextEncoder(), AX = ['x', 'y', 'z'];
+  const m = {mpos:{x:0, y:0, z:0}, plan:{x:0, y:0, z:0}, wco:{x:0, y:0, z:0}, state:'Idle', abs:true, motion:0,
+    feed:0, sOn:0, sVal:0, blocks:[], cur:null, line:'', rxBytes:0, pending:[], speed:1, timer:null, ctrl:null};
+  const say = s => { try { m.ctrl.enqueue(enc.encode(s + '\r\n')); } catch(e) { /* closed */ } };
+  const f3 = v => v.toFixed(3);
+
+  function parseWords(l){ const w = []; let r; const re = /([A-Z])(-?\d*\.?\d+)/g; while ((r = re.exec(l))) w.push([r[1], +r[2]]); return w; }
+  function exec(raw){
+    const l = raw.toUpperCase().replace(/\(.*?\)/g, '').replace(/;.*/, '').replace(/\s+/g, '');
+    if (!l) return 'ok';
+    if (l === '$$'){
+      ['$0=10','$1=25','$10=1','$20=0','$21=0','$22=0','$30=10000','$31=0','$32=0','$100=800','$101=800','$102=800',
+       '$110=1500','$111=1500','$112=1500','$120=200','$121=200','$122=200','$130=310','$131=300','$132=80'].forEach(say);
+      return 'ok';
+    }
+    if (l === '$X'){ if (m.state === 'Alarm'){ m.state = 'Idle'; say('[MSG:Caution: Unlocked]'); } return 'ok'; }
+    if (l === '$H') return 'error:5';                                   // homing not enabled ($22=0)
+    if (l === '$I'){ say('[VER:1.1h.SIMPLECAM-SIM:]'); return 'ok'; }
+    if (l === '$G'){ say('[GC:G' + m.motion + ' G54 G17 G21 G' + (m.abs ? 90 : 91) + ' G94 M' + (m.sOn ? 3 : 5) + ' M9 T0 F' + m.feed + ' S' + m.sVal + ']'); return 'ok'; }
+    if (m.state === 'Alarm') return 'error:9';                          // G-code locked out during alarm
+    if (l.startsWith('$J=')){
+      const w = parseWords(l.slice(3)); let f = 0; const t = {...m.plan};
+      for (const [k, v] of w) if (k === 'G'){ if (![90, 91, 21].includes(v)) return 'error:20'; } else if (k === 'F') f = v;
+      const inc = w.some(x => x[0] === 'G' && x[1] === 91) || (!w.some(x => x[0] === 'G' && x[1] === 90) && !m.abs);
+      if (!(f > 0)) return 'error:22';
+      for (const [k, v] of w){ const a = k.toLowerCase(); if (AX.includes(a)) t[a] = inc ? m.plan[a] + v : v + m.wco[a]; }
+      m.blocks.push({type:'line', jog:true, to:t, feed:f}); m.plan = t; return 'ok';
+    }
+    if (l[0] === '$') return /^\$\d+=/.test(l) ? 'ok' : 'error:3';
+    const w = parseWords(l); let motion = null, dwell = null, g10 = false;
+    for (const [k, v] of w){
+      if (k === 'G'){
+        if (v <= 3) motion = v; else if (v === 4) dwell = 0; else if (v === 10) g10 = true;
+        else if (v === 90) m.abs = true; else if (v === 91) m.abs = false;
+        else if (![17, 21, 54, 94].includes(v)) return 'error:20';
+      } else if (k === 'M'){
+        if (v === 3 || v === 4) m.blocks.push({type:'spindle', on:1}); else if (v === 5 || v === 2 || v === 30) m.blocks.push({type:'spindle', on:0});
+        else if (v !== 9 && v !== 8) return 'error:20';
+      } else if (k === 'F') m.feed = v; else if (k === 'S') m.sVal = v;
+      else if (k === 'P' && dwell !== null) dwell = v;
+    }
+    if (g10){
+      if (!w.some(x => x[0] === 'L' && x[1] === 20)) return 'error:20';
+      for (const [k, v] of w){ const a = k.toLowerCase(); if (AX.includes(a)) m.wco[a] = m.plan[a] - v; }
+      return 'ok';
+    }
+    if (dwell !== null){ m.blocks.push({type:'dwell', secs:dwell}); return 'ok'; }
+    if (motion !== null) m.motion = motion;
+    const hasAxis = w.some(x => AX.includes(x[0].toLowerCase()));
+    if (!hasAxis) return 'ok';
+    const t = {...m.plan};
+    for (const [k, v] of w){ const a = k.toLowerCase(); if (AX.includes(a)) t[a] = m.abs ? v + m.wco[a] : m.plan[a] + v; }
+    if (m.motion > 0 && !(m.feed > 0)) return 'error:22';
+    if (m.motion >= 2){
+      const I = (w.find(x => x[0] === 'I') || [0, 0])[1], J = (w.find(x => x[0] === 'J') || [0, 0])[1];
+      m.blocks.push({type:'arc', from:{...m.plan}, to:t, c:{x:m.plan.x + I, y:m.plan.y + J}, cw:m.motion === 2, feed:m.feed});
+    } else m.blocks.push({type:'line', to:t, feed:m.motion === 0 ? RAPID : m.feed, rapid:m.motion === 0});
+    m.plan = t;
+    return 'ok';
+  }
+  // Plan waiting lines while the planner has room, answering each one.
+  function parseQueued(){
+    while (m.pending.length && m.blocks.length < 15){
+      const l = m.pending.shift(); m.rxBytes -= l.length + 1;
+      say(exec(l));
+    }
+  }
+  function arcGeom(b){
+    const r = Math.hypot(b.from.x - b.c.x, b.from.y - b.c.y), a0 = Math.atan2(b.from.y - b.c.y, b.from.x - b.c.x);
+    let sweep = Math.atan2(b.to.y - b.c.y, b.to.x - b.c.x) - a0;
+    if (b.cw){ while (sweep >= -1e-9) sweep -= 2*Math.PI; } else { while (sweep <= 1e-9) sweep += 2*Math.PI; }
+    return {r, a0, sweep, L:Math.hypot(r*Math.abs(sweep), b.to.z - b.from.z)};
+  }
+  // Run the planner: move along the blocks at their feed rate (times the sim speed).
+  function tick(){
+    if (/^Hold|Alarm/.test(m.state)) return;
+    let budget = 0.025*m.speed;
+    while (budget > 0){
+      if (!m.cur){
+        m.cur = m.blocks.shift();
+        if (!m.cur){ if (m.state !== 'Idle') m.state = 'Idle'; parseQueued(); return; }
+        const b = m.cur; b.done = 0; b.start = {...m.mpos};
+        if (b.type === 'arc'){ Object.assign(b, arcGeom(b)); b.from = b.start; }
+        else if (b.type === 'line') b.L = Math.hypot(b.to.x - b.start.x, b.to.y - b.start.y, b.to.z - b.start.z);
+        m.state = b.jog ? 'Jog' : 'Run';
+      }
+      const b = m.cur;
+      if (b.type === 'spindle'){ m.sOn = b.on; m.cur = null; parseQueued(); continue; }
+      if (b.type === 'dwell'){ const use = Math.min(budget, b.secs - b.done); b.done += use; budget -= use; if (b.done >= b.secs - 1e-9){ m.cur = null; parseQueued(); } continue; }
+      const rate = b.feed/60, need = (b.L - b.done)/rate;
+      const use = Math.min(budget, need); b.done += use*rate; budget -= use;
+      const u = b.L > 0 ? Math.min(1, b.done/b.L) : 1;
+      if (b.type === 'line') for (const a of AX) m.mpos[a] = b.start[a] + (b.to[a] - b.start[a])*u;
+      else { const a = b.a0 + b.sweep*u; m.mpos.x = b.c.x + b.r*Math.cos(a); m.mpos.y = b.c.y + b.r*Math.sin(a); m.mpos.z = b.start.z + (b.to.z - b.start.z)*u; }
+      if (u >= 1){ m.mpos = {...b.to}; m.cur = null; parseQueued(); }
+    }
+  }
+  function realtime(byte){
+    if (byte === 0x3F){
+      const moving = m.cur && m.cur.feed && !/^Hold/.test(m.state) ? m.cur.feed : 0;
+      say('<' + m.state + '|MPos:' + AX.map(a => f3(m.mpos[a])).join(',') + '|FS:' + Math.round(moving) + ',' + (m.sOn ? m.sVal : 0) +
+          '|WCO:' + AX.map(a => f3(m.wco[a])).join(',') + '>');
+    } else if (byte === 0x21){                                              // feed hold
+      if (m.state === 'Jog') cancelJog(); else if (m.state === 'Run') m.state = 'Hold:0';
+    } else if (byte === 0x7E){ if (/^Hold/.test(m.state)) m.state = m.cur || m.blocks.length ? 'Run' : 'Idle'; }
+    else if (byte === 0x85){ if (m.state === 'Jog') cancelJog(); }
+    else if (byte === 0x18){                                                // soft reset
+      const moving = m.state === 'Run' || m.state === 'Jog';
+      m.blocks = []; m.cur = null; m.pending = []; m.line = ''; m.rxBytes = 0; m.sOn = 0; m.plan = {...m.mpos}; m.abs = true; m.motion = 0;
+      if (moving){ m.state = 'Alarm'; say('ALARM:3'); } else m.state = 'Idle';
+      say("Grbl 1.1h ['$' for help]");
+      if (moving) say("[MSG:'$H'|'$X' to unlock]");
+    }
+  }
+  function cancelJog(){ m.blocks = m.blocks.filter(b => !b.jog); if (m.cur && m.cur.jog) m.cur = null; m.plan = {...m.mpos}; m.state = 'Idle'; }
+
+  m.port = {
+    async open(){
+      m.timer = setInterval(tick, 25);
+      setTimeout(() => say("Grbl 1.1h ['$' for help]"), 150);
+    },
+    async close(){ clearInterval(m.timer); try { m.ctrl.close(); } catch(e) { /* already closed */ } },
+    readable: new ReadableStream({start(c){ m.ctrl = c; }}),
+    writable: new WritableStream({write(chunk){
+      for (const b of chunk){
+        if (b === 0x3F || b === 0x21 || b === 0x7E || b === 0x18 || b >= 0x80){ realtime(b); continue; }
+        if (b === 0x0D) continue;
+        m.rxBytes++;
+        if (m.rxBytes > 128) say('[MSG:SIM receive buffer overflow]');
+        if (b === 0x0A){ m.pending.push(m.line); m.line = ''; parseQueued(); } else m.line += String.fromCharCode(b);
+      }
+    }})
+  };
+  return m;
+}
+
+/* ---------- machine: GRBL 1.1 sender over Web Serial (Chrome / Edge) ---------- */
+// Streams with character counting: never more than RX_BUF bytes waiting in GRBL's 128-byte receive buffer.
+const RX_BUF = 127;
+const mc = {port:null, reader:null, writer:null, wq:Promise.resolve(), poll:null, rx:'', state:'Disconnected',
+  pos:null, wco:{x:0, y:0, z:0}, queue:[], inflight:[], job:null, lastJob:null, step:1, stopping:false, log:[]};
+const mcConnected = () => !!mc.writer;
+const mcBusy = () => !!mc.job || /^(Run|Jog|Hold|Home)/.test(mc.state);
+
+function mcLog(s, kind){
+  mc.log.push((kind === 'err' ? '! ' : kind === 'out' ? '> ' : '  ') + s);
+  if (mc.log.length > 400) mc.log.splice(0, mc.log.length - 400);
+  const el = $('mcConsole'); el.textContent = mc.log.join('\n'); el.scrollTop = el.scrollHeight;
+}
+function mcWrite(bytes){
+  mc.wq = mc.wq.then(() => mc.writer && mc.writer.write(bytes)).catch(err => mcLost(err));
+}
+function mcRealtime(code){ if (mcConnected()) mcWrite(new Uint8Array([code])); }
+function mcSend(text, jobLine){ mc.queue.push({text, jobLine}); mcPump(); }
+function mcPump(){
+  let used = mc.inflight.reduce((s, c) => s + c.text.length + 1, 0);
+  while (mc.queue.length && used + mc.queue[0].text.length + 1 <= RX_BUF){
+    const c = mc.queue.shift();
+    mc.inflight.push(c); used += c.text.length + 1;
+    mcWrite(new TextEncoder().encode(c.text + '\n'));
+    if (c.jobLine == null) mcLog(c.text, 'out');
+  }
+}
+
+async function mcConnect(){
+  if (mcConnected()) return mcDisconnect();
+  if (!('serial' in navigator)) return mcLog('This browser cannot talk to USB serial ports. Open SimpleCAM in Chrome or Edge.', 'err');
+  try { await mcOpen(await navigator.serial.requestPort(), 115200); }
+  catch(err){ mcLog(err.name === 'NotFoundError' ? 'No port chosen.' : 'Could not open the port: ' + err.message, 'err'); }
+}
+async function mcConnectSim(){
+  if (mcConnected()) return;
+  const s = makeSimMachine(); s.speed = +$('mcSimSpeed').value;
+  mc.sim = s;
+  await mcOpen(s.port, 115200, 'Connected to the simulated machine (no real CNC). Waiting for GRBL…');
+}
+async function mcOpen(port, baud, msg){
+  await port.open({baudRate:baud});
+  mc.port = port; mc.writer = port.writable.getWriter(); mc.rx = ''; mc.queue = []; mc.inflight = [];
+  mc.state = 'Connecting'; mcLog(msg || 'Connected at ' + baud + ' baud. Waiting for GRBL…');
+  mcReadLoop();
+  mc.poll = setInterval(() => mcRealtime(0x3F), 250);   // '?' status report
+  mcUi();
+}
+async function mcReadLoop(){
+  const dec = new TextDecoder();
+  try {
+    mc.reader = mc.port.readable.getReader();
+    for (;;){
+      const {value, done} = await mc.reader.read();
+      if (done) break;
+      mc.rx += dec.decode(value, {stream:true});
+      const lines = mc.rx.split('\n'); mc.rx = lines.pop();
+      for (const l of lines){ const t = l.trim(); if (t) mcLine(t); }
+    }
+  } catch(err) { if (mc.port) mcLost(err); return; }
+  finally { try { mc.reader && mc.reader.releaseLock(); } catch(e) { /* already released */ } }
+  if (mc.port) mcLost(new Error('the port closed'));
+}
+async function mcDisconnect(){
+  if (mc.job && !confirm('A job is running. Disconnecting does not stop the machine. Disconnect anyway?')) return;
+  const port = mc.port;
+  clearInterval(mc.poll); mc.port = null;
+  try { await mc.reader?.cancel(); } catch(e) { /* ignore */ }
+  try { await mc.wq; mc.writer?.releaseLock(); } catch(e) { /* ignore */ }
+  try { await port?.close(); } catch(e) { /* ignore */ }
+  mcReset('Disconnected');
+  mcLog('Disconnected.');
+}
+function mcLost(err){
+  if (!mc.writer) return;
+  clearInterval(mc.poll);
+  mcLog('Connection lost (' + (err && err.message || err) + ').' + (mc.job ? ' The job was interrupted: check the machine.' : ''), 'err');
+  mc.port = null; mcReset('Disconnected');
+}
+function mcReset(state){
+  mc.writer = null; mc.reader = null; mc.wq = Promise.resolve(); mc.state = state; mc.pos = null; mc.sim = null;
+  mc.queue = []; mc.inflight = []; mcEndJob('stopped'); mcUi();
+}
+
+function mcLine(line){
+  if (line[0] === '<') return mcStatus(line);
+  if (line === 'ok' || line.startsWith('error')){
+    const c = mc.inflight.shift();
+    if (line.startsWith('error')){
+      mcLog(line + (c ? ' on "' + c.text + '"' : ''), 'err');
+      if (c && c.jobLine != null) mcStop('GRBL rejected line ' + c.jobLine + ' (' + c.text + ')');
+    } else if (c && c.jobLine != null && mc.job){
+      mc.job.acked = c.jobLine; mc.job.ackCount++;
+    }
+    mcPump(); mcUi();
+    return;
+  }
+  if (line.startsWith('ALARM')){
+    mcLog(line + ' (machine stopped; click Unlock when it is safe)', 'err');
+    mc.queue = []; mc.inflight = []; mcEndJob('alarm');
+  } else if (/^Grbl /i.test(line)){
+    mc.queue = []; mc.inflight = []; mc.stopping = false;
+    if (mc.job) mcEndJob('stopped');
+    mcLog(line);
+  } else mcLog(line);
+  mcUi();
+}
+function mcStatus(line){
+  const f = line.slice(1, -1).split('|'), num = s => s.split(',').map(Number);
+  mc.state = f[0];
+  let m = null, w = null;
+  for (const x of f.slice(1)){
+    const [k, v] = x.split(':');
+    if (k === 'MPos') m = num(v); else if (k === 'WPos') w = num(v);
+    else if (k === 'WCO'){ const c = num(v); mc.wco = {x:c[0], y:c[1], z:c[2]}; }
+  }
+  if (w) mc.pos = {x:w[0], y:w[1], z:w[2]};
+  else if (m) mc.pos = {x:m[0] - mc.wco.x, y:m[1] - mc.wco.y, z:m[2] - mc.wco.z};
+  // Stop = feed hold, then a soft reset once motion has fully stopped, so GRBL keeps its position.
+  if (mc.stopping && mc.state === 'Hold:0'){ mc.stopping = false; mcRealtime(0x18); }
+  if (mc.job && mc.job.allQueued && !mc.queue.length && !mc.inflight.length && mc.state === 'Idle') mcEndJob('done');
+  mcUi();
+}
+
+function mcStart(){
+  const g = genSheet(sheetIdx);
+  if (!g.gcode) return mcLog('Nothing to cut on this sheet.', 'err');
+  if (g.bad.size) return mcLog('Fix the red parts on the Sheet tab first.', 'err');
+  const lines = [];
+  g.gcode.split('\n').forEach((raw, i) => {
+    const t = raw.replace(/\(.*?\)/g, '').replace(/;.*/, '').trim();
+    if (t) lines.push({text:t, n:i + 1});
+  });
+  const p = parseGcode(g.gcode);
+  if (!confirm('Start sheet ' + (sheetIdx + 1) + ' (' + g.geo.length + ' parts, about ' + Math.ceil(p.total*1.15) + ' min)?\n\n' +
+    'Check: X0 Y0 is the front-left corner of the sheet, Z0 is its top, the ' + set.tool + ' mm cutter is fitted, ' +
+    'the sheet is clamped clear of the parts, and you can reach the stop button.')) return;
+  mc.job = {sheet:sheetIdx, sim:p, total:lines.length, acked:0, ackCount:0, started:Date.now(), allQueued:false, paused:false};
+  for (const l of lines) mc.queue.push({text:l.text, jobLine:l.n});
+  mc.job.allQueued = true;
+  mcLog('Job started: sheet ' + (sheetIdx + 1) + ', ' + lines.length + ' lines.');
+  mcPump(); mcUi();
+}
+function mcPause(){
+  if (!mc.job && !/^Hold/.test(mc.state)) return;
+  if (/^Hold/.test(mc.state) || (mc.job && mc.job.paused)){ mcRealtime(0x7E); if (mc.job) mc.job.paused = false; mcLog('Resume.'); }
+  else { mcRealtime(0x21); if (mc.job) mc.job.paused = true; mcLog('Pause (feed hold).'); }
+  mcUi();
+}
+function mcStop(reason){
+  mc.queue = [];
+  if (/^Jog/.test(mc.state)) mcRealtime(0x85);   // jog cancel
+  mcRealtime(0x21);                               // feed hold first
+  mc.stopping = true;
+  setTimeout(() => { if (mc.stopping){ mc.stopping = false; mcRealtime(0x18); } }, 4000);
+  mcLog('Stop' + (typeof reason === 'string' ? ': ' + reason : '') + '. Holding, then resetting GRBL (spindle off).', typeof reason === 'string' ? 'err' : '');
+  mcEndJob('stopped');
+  mcUi();
+}
+function mcEndJob(how){
+  if (!mc.job) return;
+  const j = mc.job; j.end = how; mc.lastJob = j; mc.job = null;
+  if (how === 'done') mcLog('Job finished in ' + mmss((Date.now() - j.started)/60000) + '.');
+  if (how === 'alarm') mcLog('Job stopped by an alarm at line ' + j.acked + '.', 'err');
+}
+function mcJog(axis, dir){
+  if (!mcConnected() || mc.job) return;
+  const f = Math.max(10, +$('mcJogF').value || 1000);
+  mcSend('$J=G91 G21 ' + axis + r4(dir*mc.step) + ' F' + f);
+}
+
+function mcUi(){
+  const on = mcConnected(), busy = mcBusy(), st = mc.state.split(':')[0];
+  $('mcConnect').textContent = on ? 'Disconnect' : 'Connect';
+  $('mcConnect').classList.toggle('primary', !on);
+  const pill = $('mcState'); pill.textContent = (mc.sim ? 'Simulated · ' : '') + mc.state; pill.className = 'pill st-' + st.toLowerCase();   // prefixed: a bare "jog" class would pick up the jog grid's layout
+  $('mcConnectSim').classList.toggle('hidden', on);
+  $('mcSimSpeedWrap').classList.toggle('hidden', !mc.sim);
+  const pad = v => v.toFixed(3).padStart(8);   // fixed width so the numbers don't push the bar around
+  $('mcPos').textContent = mc.pos ? 'X' + pad(mc.pos.x) + '  Y' + pad(mc.pos.y) + '  Z' + pad(mc.pos.z) : '';
+  const free = on && !mc.job && /^(Idle|Jog)/.test(mc.state);
+  document.querySelectorAll('#machinePanel [data-jog]').forEach(b => b.disabled = !free);
+  for (const id of ['mcZeroXY','mcZeroZ','mcGoXY','mcHome','mcCmdSend']) $(id).disabled = !free;
+  $('mcUnlock').disabled = !on || !!mc.job;
+  $('mcStart').disabled = !on || !!mc.job || st !== 'Idle';
+  $('mcPause').disabled = !on || !(mc.job || st === 'Hold');
+  $('mcPause').textContent = st === 'Hold' || (mc.job && mc.job.paused) ? 'Resume' : 'Pause';
+  $('mcStop').disabled = !on || !busy;
+  document.querySelectorAll('#mcSteps [data-step]').forEach(b => b.classList.toggle('on', +b.dataset.step === mc.step));
+  const j = mc.job || mc.lastJob, n = sheetCount();
+  $('mcJobInfo').textContent = mc.job
+    ? 'Cutting sheet ' + (j.sheet + 1) + ': ' + j.ackCount + ' of ' + j.total + ' lines sent · ' + mmss((Date.now() - j.started)/60000) + ' elapsed'
+    : (j ? 'Last job: sheet ' + (j.sheet + 1) + ' ' + (j.end === 'done' ? 'finished' : j.end) + '. ' : '') +
+      'Ready: sheet ' + (sheetIdx + 1) + (n > 1 ? ' of ' + n + ' (choose on the Sheet tab)' : '') + (res && res.stats ? ' · ' + res.stats : '');
+  $('mcBar').style.width = j ? Math.round(j.ackCount/j.total*100) + '%' : '0%';
+  if (tab === 'machine' && !mcUi.queued){ mcUi.queued = true; requestAnimationFrame(() => { mcUi.queued = false; render(); }); }
+}
+// The Machine tab draws the job's toolpath cut up to the last line GRBL accepted, plus the machine's live position.
+function renderMachine(){
+  const j = mc.job || mc.lastJob, saved = sim;
+  if (j && j.sheet === sheetIdx){
+    const segs = j.sim.segs; let i = 0;
+    while (i < segs.length && segs[i].line <= j.acked) i++;
+    sim = {segs, total:j.sim.total, t:i < segs.length ? segs[i].t0 : j.sim.total};
+  } else sim = {segs:[], total:0, t:0};
+  renderSim(mc.pos);
+  sim = saved;
+}
+
+$('mcConnect').addEventListener('click', mcConnect);
+$('mcConnectSim').addEventListener('click', mcConnectSim);
+$('mcSimSpeed').addEventListener('change', () => { if (mc.sim) mc.sim.speed = +$('mcSimSpeed').value; });
+document.querySelectorAll('#mcSteps [data-step]').forEach(b => b.addEventListener('click', () => { mc.step = +b.dataset.step; mcUi(); }));
+document.querySelectorAll('#machinePanel [data-jog]').forEach(b => b.addEventListener('click', () => mcJog(b.dataset.jog, +b.dataset.dir)));
+$('mcZeroXY').addEventListener('click', () => mcSend('G10 L20 P1 X0 Y0'));
+$('mcZeroZ').addEventListener('click', () => mcSend('G10 L20 P1 Z0'));
+// Lift clear before any X/Y move: to Z5 (or Safe Z if higher), and never lower the cutter if it is already above that.
+// GRBL finishes the Z move before it starts the X/Y move.
+$('mcGoXY').addEventListener('click', () => {
+  const z = Math.max(5, set.safe || 0, mc.pos ? mc.pos.z : -Infinity);
+  mcSend('G90 G0 Z' + fmt(z)); mcSend('G0 X0 Y0');
+});
+$('mcUnlock').addEventListener('click', () => mcSend('$X'));
+$('mcHome').addEventListener('click', () => { if (confirm('Home the machine? Only do this if it has limit switches and homing is turned on.')) mcSend('$H'); });
+$('mcStart').addEventListener('click', mcStart);
+$('mcPause').addEventListener('click', mcPause);
+$('mcStop').addEventListener('click', () => mcStop());
+$('mcCmdSend').addEventListener('click', () => { const t = $('mcCmd').value.trim(); if (t){ mcSend(t); $('mcCmd').value = ''; } });
+$('mcCmd').addEventListener('keydown', e => { if (e.key === 'Enter') $('mcCmdSend').click(); });
+window.addEventListener('beforeunload', e => { if (mc.job){ e.preventDefault(); e.returnValue = ''; } });
+setInterval(() => { if (mc.job && tab === 'machine') mcUi(); }, 1000);
+
+/* ---------- modes, tabs, help ---------- */
+let flashT = null;
+function flash(msg){ $('help').textContent = msg; clearTimeout(flashT); flashT = setTimeout(setHelp, 3500); }
+function setHelp(){
+  $('help').textContent = tab === 'machine'
+    ? 'Connect, jog to the sheet corner, zero, then Start · the shaded band is what GRBL has accepted, the circle is where the machine is'
+    : tab === 'sim'
+    ? 'Plays this sheet\'s G-code · Space = play/pause · drag the slider to scrub · drag to pan, wheel zooms'
+    : tab === 'sheet'
+    ? 'Click a part to select · drag to move · R rotate 90° · M mirror · arrows nudge 1 mm (Shift 10) · Delete removes'
+    : {draw:'Click to add points · click the first point or Enter to close · Shift = straight · right-click = undo point',
+       hole:'Click to place a hole',
+       edit:'Click an edge, point or hole to type its size or angle · drag to move · double-click an edge to add a point · Delete removes',
+       pan:'Drag to pan'}[mode] + ' · wheel zooms, middle-drag pans';
+}
+function setMode(m){
+  mode = m; selected = null; renderEditPanel();
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  cv.style.cursor = m === 'pan' ? 'grab' : m === 'edit' ? 'default' : 'crosshair';
+  setHelp(); render();
+}
+function setTab(t){
+  tab = t; drag = null; cursor = null;
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('partBar').classList.toggle('hidden', t !== 'part');
+  $('sheetBar').classList.toggle('hidden', t !== 'sheet');
+  $('simBar').classList.toggle('hidden', t !== 'sim');
+  $('machineBar').classList.toggle('hidden', t !== 'machine');
+  $('machinePanel').classList.toggle('hidden', t !== 'machine');
+  $('coordBox').classList.toggle('hidden', t !== 'part');
+  cv.style.cursor = t === 'sheet' ? 'default' : t === 'sim' || t === 'machine' ? 'grab' : '';
+  simStop();
+  if (t === 'part') setMode(P().closed ? 'edit' : 'draw'); else { setHelp(); renderEditPanel(); }
+  regen();
+  if (t === 'sim') simLoad();
+  if (t === 'machine') mcUi();
+  fitView();
+}
+
+/* ---------- mouse & keys ---------- */
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('mousedown', e => {
+  const sx = e.offsetX, sy = e.offsetY, v = view();
+  if (e.button === 1 || (e.button === 0 && ((tab === 'part' && mode === 'pan') || tab === 'sim' || tab === 'machine' || spaceDown))){
+    drag = {type:'pan', sx, sy, ox:v.ox, oy:v.oy}; e.preventDefault(); return;
+  }
+  if (tab === 'sheet'){
+    if (e.button !== 0) return;
+    selInst = hitInst(sx, sy);
+    if (selInst){ snapshot(); drag = {type:'inst', w0:s2w(sx, sy), x0:selInst.x, y0:selInst.y, moved:false}; }
+    regen(); render(); return;
+  }
+  const part = P();
+  if (e.button === 2){
+    if (mode === 'draw' && !part.closed && part.pts.length){ snapshot(); part.pts.pop(); changed(); }
+    return;
+  }
+  if (e.button !== 0) return;
+  if (mode === 'draw') addPoint(snapPt(sx, sy, e));
+  else if (mode === 'hole'){
+    const p = snapPt(sx, sy, e);
+    if (!(set.holeD > 0)) return flash('Set a hole diameter first.');
+    snapshot(); part.holes.push({x:p.x, y:p.y, d:set.holeD}); changed();
+  } else if (mode === 'edit'){
+    const h = hitTest(sx, sy);
+    if (h){ selected = h; snapshot(); drag = {type:h.type, i:h.i, moved:false}; }
+    else {
+      const ei = dimHit(sx, sy) >= 0 ? dimHit(sx, sy) : edgeHit(sx, sy);
+      selected = ei >= 0 ? {type:'edge', i:ei} : null;
+    }
+    renderEditPanel(); render();
+  }
+});
+window.addEventListener('mousemove', e => {
+  const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top, v = view();
+  if (drag && drag.type === 'pan'){ v.ox = drag.ox + sx - drag.sx; v.oy = drag.oy + sy - drag.sy; render(); return; }
+  if (!drag && (sx < 0 || sy < 0 || sx > W || sy > H)){ cursor = null; render(); return; }
+  if (tab === 'sheet'){
+    const w = s2w(sx, sy);
+    $('coords').textContent = 'x ' + w.x.toFixed(1) + '   y ' + w.y.toFixed(1);
+    if (drag && drag.type === 'inst'){
+      const g = parseFloat(set.snap) || 0, q = v => g > 0 ? Math.round(v/g)*g : v;
+      selInst.x = r4(q(drag.x0 + w.x - drag.w0.x)); selInst.y = r4(q(drag.y0 + w.y - drag.w0.y)); drag.moved = true;
+      regen(); render();
+    }
+    return;
+  }
+  cursor = snapPt(sx, sy, e, drag);
+  $('coords').textContent = 'x ' + cursor.x.toFixed(2) + '   y ' + cursor.y.toFixed(2);
+  if (drag){
+    const part = P(), t = drag.type === 'pt' ? part.pts[drag.i] : part.holes[drag.i];
+    t.x = cursor.x; t.y = cursor.y; drag.moved = true;
+    writeText(); renderEditPanel();
+  }
+  render();
+});
+window.addEventListener('mouseup', () => {
+  if (drag && drag.type !== 'pan'){ if (drag.moved) changed(); else hist.pop(); }
+  drag = null;
+});
+cv.addEventListener('dblclick', e => {
+  if (tab !== 'part' || mode !== 'edit') return;
+  const i = edgeHit(e.offsetX, e.offsetY);
+  if (i < 0) return;
+  snapshot(); P().pts.splice(i+1, 0, snapPt(e.offsetX, e.offsetY, null)); selected = {type:'pt', i:i+1}; changed();
+});
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const v = view(), k = Math.exp(-e.deltaY*0.0015), w = s2w(e.offsetX, e.offsetY);
+  v.scale = Math.min(500, Math.max(0.05, v.scale*k));
+  v.ox = e.offsetX - w.x*v.scale; v.oy = e.offsetY + w.y*v.scale;
+  render();
+}, {passive:false});
+
+window.addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing){ e.preventDefault(); undo(); return; }
+  if (typing) return;
+  const k = e.key.toLowerCase();
+  if (tab === 'sim'){ if (e.key === ' '){ e.preventDefault(); simToggle(); } else if (k === 'f') fitView(); return; }
+  if (tab === 'machine'){ if (k === 'f') fitView(); return; }   // no keyboard shortcuts move the machine
+  if (e.key === ' '){ spaceDown = true; e.preventDefault(); return; }
+  if (k === 'f') return fitView();
+  if (tab === 'sheet'){
+    const st = e.shiftKey ? 10 : 1;
+    if (k === 'r') rotateSel(90);
+    else if (k === 'm') mirrorSel();
+    else if (e.key === 'Delete' || e.key === 'Backspace') removeSel();
+    else if (e.key === 'Escape'){ selInst = null; regen(); render(); }
+    else if (e.key.startsWith('Arrow') && selInst){
+      e.preventDefault();
+      nudge({ArrowLeft:-st, ArrowRight:st}[e.key] || 0, {ArrowDown:-st, ArrowUp:st}[e.key] || 0);
+    }
+    return;
+  }
+  const part = P();
+  if (e.key === 'Enter') closeShape();
+  else if (e.key === 'Escape'){ selected = null; renderEditPanel(); render(); }
+  else if (e.key === 'Backspace' && mode === 'draw' && !part.closed && part.pts.length){ snapshot(); part.pts.pop(); changed(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && selected && selected.type !== 'edge'){
+    snapshot();
+    if (selected.type === 'pt'){ part.pts.splice(selected.i, 1); if (part.pts.length < 3) part.closed = false; }
+    else part.holes.splice(selected.i, 1);
+    selected = null; changed();
+  }
+  else if ({d:'draw', h:'hole', e:'edit', p:'pan'}[k]) setMode({d:'draw', h:'hole', e:'edit', p:'pan'}[k]);
+});
+window.addEventListener('keyup', e => { if (e.key === ' ') spaceDown = false; });
+
+/* ---------- DXF import ---------- */
+// Reads ASCII DXF: LINE, ARC, CIRCLE, LWPOLYLINE/POLYLINE (with bulges), ELLIPSE, SPLINE (approximate).
+// Lines and arcs are joined end to end into closed outlines. Each outline not inside another becomes a part;
+// round shapes inside it become holes.
+function arcPts(c, R, a0, sweep){
+  const step = 2*Math.acos(Math.max(-1, 1 - 0.01/Math.max(R, 0.01)));
+  const n = Math.min(720, Math.max(2, Math.ceil(Math.abs(sweep)/step)));
+  const out = [];
+  for (let k=0;k<=n;k++){ const a = a0 + sweep*k/n; out.push({x:c.x + R*Math.cos(a), y:c.y + R*Math.sin(a)}); }
+  return out;
+}
+function bulgePts(p1, p2, b){
+  if (Math.abs(b) < 1e-9) return [p1, p2];
+  const th = 4*Math.atan(b), c = len(sub(p2, p1)), r = c/(2*Math.sin(th/2));
+  const d = norm(sub(p2, p1)), ctr = add(lerp(p1, p2, .5), mul({x:-d.y, y:d.x}, r*Math.cos(th/2)));
+  const pts = arcPts(ctr, Math.abs(r), Math.atan2(p1.y - ctr.y, p1.x - ctr.x), th);
+  pts[pts.length-1] = p2;
+  return pts;
+}
+function joinRuns(runs){ const out = []; for (const r of runs) for (const q of r) if (!out.length || len(sub(q, out[out.length-1])) > 1e-9) out.push(q); return out; }
+
+function parseDxf(text){
+  if (text.startsWith('AutoCAD Binary DXF')) throw new Error('This is a binary DXF. Save it as ASCII DXF and try again.');
+  const lines = text.split(/\r?\n/), pairs = [];
+  for (let i=0;i+1<lines.length;i+=2) pairs.push([parseInt(lines[i], 10), lines[i+1].trim()]);
+  let units = 4;
+  for (let i=0;i<pairs.length-1;i++) if (pairs[i][0] === 9 && pairs[i][1] === '$INSUNITS' && pairs[i+1][0] === 70){ units = +pairs[i+1][1]; break; }
+  const k = {1:25.4, 2:304.8, 5:10, 6:1000}[units] || 1;
+
+  const ents = []; let inEnt = false, cur = null;
+  for (const [c, v] of pairs){
+    if (c === 0){
+      if (cur){ ents.push(cur); cur = null; }
+      if (v === 'ENDSEC') inEnt = false;
+      else if (inEnt) cur = {type:v, g:[]};
+    } else if (cur) cur.g.push([c, v]);
+    else if (c === 2 && v === 'ENTITIES') inEnt = true;
+  }
+  if (cur) ents.push(cur);
+
+  const num = (e, code, def) => { const f = e.g.find(x => x[0] === code); return f ? parseFloat(f[1]) : def; };
+  const flip = e => num(e, 230, 1) < 0;   // drawn with a reversed Z axis: mirror X
+  const shapes = [], skipped = {};
+  const add2 = (kind, pts, e) => shapes.push({kind, pts:pts.map(p => ({x:(flip(e) ? -p.x : p.x)*k, y:p.y*k}))});
+  const polyVerts = (verts, closed, e) => {
+    if (verts.length < 2) return;
+    const runs = [];
+    for (let i=0;i<verts.length - (closed ? 0 : 1);i++) runs.push(bulgePts(verts[i], verts[(i+1)%verts.length], verts[i].b || 0));
+    const pts = joinRuns(runs);
+    if (closed) pts.pop();
+    add2(closed ? 'loop' : 'open', pts, e);
+  };
+
+  for (let i=0;i<ents.length;i++){
+    const e = ents[i];
+    switch (e.type){
+      case 'LINE': add2('open', [{x:num(e,10,0), y:num(e,20,0)}, {x:num(e,11,0), y:num(e,21,0)}], e); break;
+      case 'CIRCLE': shapes.push({kind:'circle', x:(flip(e) ? -num(e,10,0) : num(e,10,0))*k, y:num(e,20,0)*k, r:num(e,40,0)*k}); break;
+      case 'ARC': {
+        const a0 = rad(num(e,50,0)); let a1 = rad(num(e,51,360)); while (a1 <= a0) a1 += 2*Math.PI;
+        add2('open', arcPts({x:num(e,10,0), y:num(e,20,0)}, num(e,40,0), a0, a1 - a0), e); break;
+      }
+      case 'LWPOLYLINE': {
+        const verts = [];
+        for (const [c, v] of e.g){ if (c === 10) verts.push({x:+v, y:0, b:0}); else if (c === 20 && verts.length) verts[verts.length-1].y = +v; else if (c === 42 && verts.length) verts[verts.length-1].b = +v; }
+        polyVerts(verts, (num(e,70,0) & 1) === 1, e); break;
+      }
+      case 'POLYLINE': {
+        const verts = [];
+        while (i+1 < ents.length && ents[i+1].type === 'VERTEX'){ const v = ents[++i]; verts.push({x:num(v,10,0), y:num(v,20,0), b:num(v,42,0)}); }
+        if (i+1 < ents.length && ents[i+1].type === 'SEQEND') i++;
+        polyVerts(verts, (num(e,70,0) & 1) === 1, e); break;
+      }
+      case 'ELLIPSE': {
+        const c = {x:num(e,10,0), y:num(e,20,0)}, M = {x:num(e,11,1), y:num(e,21,0)}, ratio = num(e,40,1);
+        const m = {x:-M.y*ratio, y:M.x*ratio}, t0 = num(e,41,0); let t1 = num(e,42,2*Math.PI); while (t1 <= t0) t1 += 2*Math.PI;
+        const full = Math.abs(t1 - t0 - 2*Math.PI) < 1e-6, n = Math.max(8, Math.ceil((t1 - t0)/rad(3))), pts = [];
+        for (let j=0;j<=n;j++){ const t = t0 + (t1 - t0)*j/n; pts.push({x:c.x + M.x*Math.cos(t) + m.x*Math.sin(t), y:c.y + M.y*Math.cos(t) + m.y*Math.sin(t)}); }
+        if (full) pts.pop();
+        add2(full ? 'loop' : 'open', pts, e); break;
+      }
+      case 'SPLINE': {
+        const fx = e.g.filter(x => x[0] === 11).map(x => +x[1]), fy = e.g.filter(x => x[0] === 21).map(x => +x[1]);
+        const cx = e.g.filter(x => x[0] === 10).map(x => +x[1]), cy = e.g.filter(x => x[0] === 20).map(x => +x[1]);
+        const [xs, ys] = fx.length > 1 ? [fx, fy] : [cx, cy];
+        const pts = xs.map((x, j) => ({x, y:ys[j]}));
+        if (pts.length > 1){ add2('open', pts, e); skipped['spline (approximated)'] = (skipped['spline (approximated)'] || 0) + 1; }
+        break;
+      }
+      case 'VERTEX': case 'SEQEND': case 'POINT': break;
+      default: if (/^(INSERT|TEXT|MTEXT|DIMENSION|HATCH|LEADER|SOLID|3DFACE)$/.test(e.type)) skipped[e.type.toLowerCase()] = (skipped[e.type.toLowerCase()] || 0) + 1;
+    }
+  }
+  return {shapes, skipped};
+}
+
+// Join open pieces whose ends meet into closed loops.
+function chainLoops(opens, tol){
+  const loops = [], left = opens.map(p => p.slice()); let openLeft = 0;
+  while (left.length){
+    let c = left.pop(), grown = true;
+    while (grown && len(sub(c[0], c[c.length-1])) > tol){
+      grown = false;
+      for (let j=0;j<left.length;j++){
+        const s = left[j], e = c[c.length-1], b = c[0];
+        if (len(sub(s[0], e)) <= tol) c = c.concat(s.slice(1));
+        else if (len(sub(s[s.length-1], e)) <= tol) c = c.concat(s.slice().reverse().slice(1));
+        else if (len(sub(s[s.length-1], b)) <= tol) c = s.concat(c.slice(1));
+        else if (len(sub(s[0], b)) <= tol) c = s.slice().reverse().concat(c.slice(1));
+        else continue;
+        left.splice(j, 1); grown = true; break;
+      }
+    }
+    if (c.length > 2 && len(sub(c[0], c[c.length-1])) <= tol){ c.pop(); loops.push(c); } else openLeft++;
+  }
+  return {loops, openLeft};
+}
+function dropCollinear(p){
+  let out = p.slice(), changedAny = true;
+  while (changedAny && out.length > 3){
+    changedAny = false;
+    for (let i=0;i<out.length;i++){
+      const a = out[(i-1+out.length)%out.length], b = out[i], c = out[(i+1)%out.length];
+      const u = sub(b, a), v = sub(c, b);
+      if (Math.abs(cross(norm(u), norm(v))) < 1e-7 && dot(u, v) > 0){ out.splice(i, 1); changedAny = true; break; }
+    }
+  }
+  return out;
+}
+function asCircle(p){
+  const xs = p.map(q => q.x), ys = p.map(q => q.y);
+  const c = {x:(Math.min(...xs) + Math.max(...xs))/2, y:(Math.min(...ys) + Math.max(...ys))/2};
+  const rs = p.map(q => len(sub(q, c))), r = rs.reduce((s, v) => s + v, 0)/rs.length;
+  if (p.length < 8 || rs.some(v => Math.abs(v - r) > Math.max(0.02, r*0.01))) return null;
+  return {x:c.x, y:c.y, r};
+}
+
+function dxfToParts(text, baseName){
+  const {shapes, skipped} = parseDxf(text);
+  const {loops, openLeft} = chainLoops(shapes.filter(s => s.kind === 'open').map(s => s.pts), 0.05);
+  const items = [];
+  for (const s of shapes) if (s.kind === 'circle' && s.r > 0) items.push({circle:{x:s.x, y:s.y, r:s.r}});
+  for (const pts of [...shapes.filter(s => s.kind === 'loop').map(s => s.pts), ...loops]){
+    const p = clean(pts); if (p.length < 3) continue;
+    const c = asCircle(p);
+    items.push(c ? {circle:c, pts:p} : {pts:p});
+  }
+  for (const it of items) it.area = it.pts ? Math.abs(area(it.pts)) : Math.PI*it.circle.r**2;
+  items.sort((a, b) => b.area - a.area);
+
+  const outers = []; let ignored = 0;
+  const inside = (o, pt) => o.pts ? inPoly(pt, o.pts) : len(sub(pt, o.circle)) < o.circle.r;
+  for (const it of items){
+    const at = it.circle ? it.circle : it.pts[0];
+    const host = outers.find(o => inside(o.item, at));
+    if (!host) outers.push({item:it, holes:[]});
+    else if (it.circle) host.holes.push(it.circle);
+    else ignored++;
+  }
+  if (!outers.length) throw new Error('No closed shapes found in ' + baseName + '.');
+
+  const parts = outers.map((o, n) => {
+    let pts = o.item.pts ? dropCollinear(clean(o.item.pts)) : arcPts(o.item.circle, o.item.circle.r, 0, 2*Math.PI).slice(0, -1);
+    if (area(pts) < 0) pts = pts.reverse();
+    const mx = Math.min(...pts.map(q => q.x)), my = Math.min(...pts.map(q => q.y));
+    return {name:baseName + (outers.length > 1 ? ' ' + (n + 1) : ''), qty:1, closed:true,
+      pts:pts.map(q => rp({x:q.x - mx, y:q.y - my})),
+      holes:o.holes.map(h => ({...rp({x:h.x - mx, y:h.y - my}), d:r4(h.r*2)}))};
+  });
+  const notes = [];
+  if (ignored) notes.push(ignored + ' cut-out(s) that are not round were left out');
+  if (openLeft) notes.push(openLeft + ' open line(s) that do not form a closed shape were left out');
+  for (const t in skipped) notes.push(skipped[t] + ' ' + t + (t.includes('approx') ? '' : ' skipped') + (t === 'insert' ? ' (explode blocks first)' : ''));
+  return {parts, notes};
+}
+
+async function importFiles(files){
+  const msgs = []; let first = null;
+  for (const f of files){
+    if (!/\.dxf$/i.test(f.name)){ msgs.push(f.name + ': not a .dxf file.'); continue; }
+    try {
+      const {parts, notes} = dxfToParts(await f.text(), f.name.replace(/\.dxf$/i, ''));
+      if (!first) snapshot();
+      for (const p of parts){
+        const empty = P() && !P().pts.length && !P().holes.length && doc.parts.length === 1;
+        if (empty && !first){ Object.assign(P(), p); first = P(); continue; }
+        const np = {id:doc.nextId++, ...p}; doc.parts.push(np); if (!first) first = np;
+      }
+      msgs.push(f.name + ': ' + parts.length + ' part(s), ' + parts.reduce((s, p) => s + p.holes.length, 0) + ' hole(s)' + (notes.length ? '. ' + notes.join('; ') + '.' : '.'));
+    } catch(err) { msgs.push(f.name + ': ' + err.message); }
+  }
+  $('importMsg').textContent = msgs.join(' ');
+  if (first){ curId = first.id; selected = null; renderParts(); changed(); setTab('part'); }
+}
+
+/* ---------- panel wiring ---------- */
+$('importDxf').addEventListener('click', () => $('dxfFile').click());
+$('dxfFile').addEventListener('change', () => { importFiles([...$('dxfFile').files]); $('dxfFile').value = ''; });
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) importFiles([...e.dataTransfer.files]); });
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+document.querySelectorAll('.undo').forEach(b => b.addEventListener('click', undo));
+document.querySelectorAll('.fit').forEach(b => b.addEventListener('click', fitView));
+for (const k in DEF_SET){
+  const el = $(k); if (!el) continue;
+  el.addEventListener(el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input', () => {
+    if (k === 'material') writeSet(MATERIALS[el.value]);
+    regen(); render(); save();
+    if (k === 'sheetW' || k === 'sheetH') fitView();
+  });
+}
+$('closeShape').addEventListener('click', closeShape);
+$('clearShape').addEventListener('click', () => { const p = P(); if (!p.pts.length && !p.holes.length) return; snapshot(); p.pts = []; p.holes = []; p.closed = false; selected = null; changed(); setMode('draw'); });
+$('newPart').addEventListener('click', () => { snapshot(); const p = newPartObj(); doc.parts.push(p); curId = p.id; renderParts(); changed(); setTab('part'); });
+$('applyText').addEventListener('click', () => {
+  try {
+    const pts = parsePts($('ptsText').value), holes = parseHoles($('holesText').value);
+    snapshot(); const p = P(); p.pts = pts; p.holes = holes; p.closed = pts.length >= 3;
+    $('textErr').textContent = ''; changed(true); fitView();
+  } catch(err) { $('textErr').textContent = err.message; }
+});
+$('addNext').addEventListener('click', () => {
+  try {
+    const p = P(), cur = p.pts.length ? p.pts[p.pts.length-1] : {x:0, y:0};
+    addPoint(parsePoint($('nextPt').value.trim(), cur)); $('nextPt').select();
+  } catch(err) { flash(err.message); }
+});
+$('nextPt').addEventListener('keydown', e => { if (e.key === 'Enter') $('addNext').click(); });
+$('nest').addEventListener('click', nest);
+$('rot90').addEventListener('click', () => rotateSel(90));
+$('mirror').addEventListener('click', mirrorSel);
+$('dupe').addEventListener('click', dupeSel);
+$('remove').addEventListener('click', removeSel);
+$('angle').addEventListener('change', () => { if (!selInst) return; snapshot(); turnInst(selInst, parseFloat($('angle').value) || 0, selInst.mir); changed(); });
+$('prevSheet').addEventListener('click', () => { if (sheetIdx > 0){ sheetIdx--; selInst = null; regen(); render(); } });
+$('nextSheet').addEventListener('click', () => { if (sheetIdx < sheetCount() - 1){ sheetIdx++; selInst = null; regen(); render(); } });
+$('download').addEventListener('click', () => download(sheetIdx));
+$('downloadAll').addEventListener('click', () => { for (let i=0;i<sheetCount();i++) setTimeout(() => download(i), i*400); });
+$('resetSet').addEventListener('click', () => { writeSet(DEF_SET); regen(); render(); save(); fitView(); });
+
+/* ---------- start ---------- */
+load();
+writeSet(set);
+writeText();
+sync();
+renderParts();
+new ResizeObserver(resize).observe(document.querySelector('.canvasWrap'));
+requestAnimationFrame(() => { resize(); setTab(doc.placed.length ? 'sheet' : 'part'); });
+</script>
+</body>
+</html>
